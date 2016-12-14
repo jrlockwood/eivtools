@@ -5,5 +5,5 @@ Version: 0.1.0
 Date: 2016-12-13
 Author: J.R. Lockwood
 Maintainer: J.R. Lockwood <jrlockwood@ets.org>
-Description: Currently provides function and related methods for errors-in-variables linear regression with robust standard errors provided for either known reliabilities or known measurement error covariance matrix.
+Description: Currently provides function and related methods for errors-in-variables linear regression with robust standard errors provided for either known reliabilities or known measurement error covariance matrix. Additional functions for various models forthcoming.
 License: GPL (>= 2)

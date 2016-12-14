@@ -1,9 +1,8 @@
 \name{model.matrix.eivlm}
 \alias{model.matrix.eivlm}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
+\title{Extract model matrix from \code{eivlm} object.}
+
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }

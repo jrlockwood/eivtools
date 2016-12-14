@@ -1,9 +1,9 @@
 \name{vcov.eivlm}
 \alias{vcov.eivlm}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
+\title{Extract variance/covariance matrix of estimated parameters from
+  \code{eivlm} model object.}
+
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }

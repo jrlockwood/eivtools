@@ -1,9 +1,7 @@
 \name{print.summary.eivlm}
 \alias{print.summary.eivlm}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
+\title{Print method for \code{summary.eivlm} objects}
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }

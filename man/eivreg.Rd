@@ -1,9 +1,8 @@
 \name{eivreg}
 \alias{eivreg}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
+
+\title{Function for fitting errors-in-variables (EIV) linear regression.}
+
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }

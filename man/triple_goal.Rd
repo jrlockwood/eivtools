@@ -1,16 +1,17 @@
 \name{triple_goal}
 \alias{triple_goal}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+
+\title{Shen and Louis (1998) Triple Goal Estimators}
+
+\description{ \code{triple_goal} implements the "triple goal" estimators
+  of Shen and Louis for a vector of parameters given a sample from the
+  posterior distribution of those parameters.}
+
 \usage{
 triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 }
 %- maybe also 'usage' for other objects documented here.
+
 \arguments{
   \item{s}{
 %%     ~~Describe \code{s} here~~
@@ -32,21 +33,21 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 %%  \item{comp2 }{Description of 'comp2'}
 %% ...
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
+\references{Wei Shen and Thomas A. Louis (1998). \dQuote{Triple-goal estimates in
+    two-stage hierarchical models,} \emph{Journal of the Royal
+    Statistical Society, Series B} 60(2):455-471.}
+
 \author{
-%%  ~~who you are~~
+  J.R. Lockwood \email{jrlockwood@ets.org}
 }
-\note{
-%%  ~~further notes~~
-}
+
+%% \note{
+%% }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
+%% \seealso{
+%% }
 \examples{
 ##---- Should be DIRECTLY executable !! ----
 ##-- ==>  Define data, use random,

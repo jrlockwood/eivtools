@@ -1,0 +1,13 @@
+export(triple_goal, eivreg)
+
+importFrom("stats", ".getXlevels", "coef", "cov.wt", "is.empty.model",
+           "lm.fit", "lm.wfit", "model.matrix", "model.matrix.lm",
+           "model.offset", "model.response", "model.weights",
+           "printCoefmat", "pt", "quantile", "sd", "symnum", "var",
+           "weighted.mean")
+
+S3method(model.matrix, eivlm)
+S3method(print, eivlm)
+S3method(print, summary.eivlm)
+S3method(summary, eivlm)
+S3method(vcov, eivlm)

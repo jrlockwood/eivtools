@@ -44,8 +44,8 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
     
   \item{df_adj}{
     Logical (default FALSE); if TRUE, the estimated variance/covariance
-    matrix of the regression parameters is multiplied by \code{N /
-    (N-p)}, where \code{N} is the number of observations used in the
+    matrix of the regression parameters is multiplied by \code{N/(N-p)},
+    where \code{N} is the number of observations used in the
     model fit and \code{p} is the number of regression parameters
     (including an intercept, if any).
   }
@@ -67,7 +67,7 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
   estimation; see references for details.
 
   The standard EIV estimator of the regression coefficients is (Q'Q -
-  S)^{-1}Q'Y, where Q is the design matrix formed from (W,Z) and S is a
+  S)^\{-1\}Q'Y, where Q is the design matrix formed from (W,Z) and S is a
   matrix that adjusts Q'Q to account for elements that are distorted due
   to measurement error.
 
@@ -112,9 +112,9 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
   different choices about degrees-of-freedom adjustments intended to
   improve small-sample coverage properties.  The \code{df_adj} argument
   will inflate the estimated variance/covariance matrix of the estimated
-  regression coefficients by \code{N / (N-p)}; see Wooldridge (2002, p. 57).  In
+  regression coefficients by \code{N/(N-p)}; see Wooldridge (2002, p. 57).  In
   addition, if \code{cluster_varname} is specified, the estimated
-  variance/covariance matrix will be inflated by \code{M / (M-1)} where
+  variance/covariance matrix will be inflated by \code{M/(M-1)} where
   \code{M} is the number of unique clusters present in the estimation sample.
 }
 
@@ -187,17 +187,17 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 }
 
 \references{
-  R.J. Carroll, D. Ruppert, L.A. Stefanski and C.M. Crainiceanu
+  Carroll R.J, Ruppert D., Stefanski L.A. and Crainiceanu C.M.
   (2006). \emph{Measurement Error in Nonlinear Models: A Modern
     Perspective} (2nd edition).  London: Chapman & Hall.
-
-  W. Fuller (2006). \emph{Measurement Error Models} (2nd edition). New York: John
+  
+  Fuller W. (2006). \emph{Measurement Error Models} (2nd edition). New York: John
   Wiley & Sons.
   
-  L.A. Stefanksi and D.B. Boos (2002). \dQuote{The calculus of
+  Stefanksi L.A. and Boos D.B. (2002). \dQuote{The calculus of
     {M}-estimation,} \emph{The American Statistician} 56(1):29-38.
 
-  J. Wooldridge (2002). \emph{Econometric Analysis of Cross Section and
+  Wooldridge J. (2002). \emph{Econometric Analysis of Cross Section and
   Panel Data}. Cambridge, MA: MIT Press.
 }
 

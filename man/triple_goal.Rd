@@ -54,11 +54,11 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 }
 
 \references{
-  Wei Shen and Thomas A. Louis (1998).
+  Shen W. and Louis T.A. (1998).
   \dQuote{Triple-goal estimates in two-stage hierarchical models,}
   \emph{Journal of the Royal Statistical Society, Series B} 60(2):455-471.
 
-  Malay Ghosh (1992).
+  Ghosh M. (1992).
   \dQuote{Constrained Bayes estimation with applications,}
   \emph{Journal of the American Statistical Association} 87(418):533-540.
 }

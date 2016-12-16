@@ -27,17 +27,17 @@
 }
 
 \references{
-  R.J. Carroll, D. Ruppert, L.A. Stefanski and C.M. Crainiceanu
+  Carroll R.J, Ruppert D., Stefanski L.A. and Crainiceanu C.M.
   (2006). \emph{Measurement Error in Nonlinear Models: A Modern
     Perspective} (2nd edition).  London: Chapman & Hall.
   
-  W. Fuller (2006). \emph{Measurement Error Models} (2nd edition). New York: John
+  Fuller W. (2006). \emph{Measurement Error Models} (2nd edition). New York: John
   Wiley & Sons.
   
-  L.A. Stefanksi and D.B. Boos (2002). \dQuote{The calculus of
+  Stefanksi L.A. and Boos D.B. (2002). \dQuote{The calculus of
     {M}-estimation,} \emph{The American Statistician} 56(1):29-38.
 
-  J. Wooldridge (2002). \emph{Econometric Analysis of Cross Section and
+  Wooldridge J. (2002). \emph{Econometric Analysis of Cross Section and
   Panel Data}. Cambridge, MA: MIT Press.
 }
 

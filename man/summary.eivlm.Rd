@@ -65,10 +65,10 @@
 }
 
 \seealso{
-  The model fitting function \code{eivreg}, \code{summary}.
+  The model fitting function \code{\link{eivreg}}, \code{\link{summary}}.
 
-  Function \code{coef} will extract the matrix of coefficients with
-  standard errors, t-statistics and p-values.
+  Function \code{\link{coef}} will extract the matrix of coefficients
+  with standard errors, t-statistics and p-values.
 }
 
 \author{

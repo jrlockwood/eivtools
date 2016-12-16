@@ -1,438 +1,247 @@
 \name{eivreg}
 \alias{eivreg}
 
-\title{Function for fitting errors-in-variables (EIV) linear regression.}
+\title{Errors-in-variables (EIV) linear regression.}
 
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+  \code{eivreg} fits errors-in-variables (EIV) linear regression given
+  specified reliabilities, or a specified variance/covariance matrix
+  for the measurement errors. For either case, it computes robust
+  standard errors that allow for weighting and/or clustering.
 }
+
 \usage{
-eivreg(formula, data, subset, weights, na.action, method = "qr", model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = FALSE, contrasts = NULL, reliability = NULL, Sigma_error = NULL, cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset, ...)
+eivreg(formula, data, subset, weights, na.action, method = "qr",
+model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = FALSE,
+contrasts = NULL, reliability = NULL, Sigma_error = NULL,
+cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
+...)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
-  \item{formula}{
-%%     ~~Describe \code{formula} here~~
-}
-  \item{data}{
-%%     ~~Describe \code{data} here~~
-}
-  \item{subset}{
-%%     ~~Describe \code{subset} here~~
-}
-  \item{weights}{
-%%     ~~Describe \code{weights} here~~
-}
-  \item{na.action}{
-%%     ~~Describe \code{na.action} here~~
-}
-  \item{method}{
-%%     ~~Describe \code{method} here~~
-}
-  \item{model}{
-%%     ~~Describe \code{model} here~~
-}
-  \item{x}{
-%%     ~~Describe \code{x} here~~
-}
-  \item{y}{
-%%     ~~Describe \code{y} here~~
-}
-  \item{qr}{
-%%     ~~Describe \code{qr} here~~
-}
-  \item{singular.ok}{
-%%     ~~Describe \code{singular.ok} here~~
-}
-  \item{contrasts}{
-%%     ~~Describe \code{contrasts} here~~
-}
+  
+  \item{formula, data, subset, weights, na.action, method, model, x, y,
+    qr, singular.ok, contrasts, offset, \dots}{
+    See documentation for \code{\link{lm}}.
+  }
+  
   \item{reliability}{
-%%     ~~Describe \code{reliability} here~~
-}
+    Named numeric vector giving the reliability for each error-prone
+    covariate.  If left \code{NULL}, \code{Sigma_error} must be specified.
+  }
+  
   \item{Sigma_error}{
-%%     ~~Describe \code{Sigma_error} here~~
-}
+    Named numeric matrix giving the variance/covariance matrix of the
+    measurement errors for the error-prone covariate(s).  If left
+    \code{NULL}, \code{reliability} must be specified.
+  }
+
   \item{cluster_varname}{
-%%     ~~Describe \code{cluster_varname} here~~
-}
+    A character variable providing the name of a variable in \code{data}
+    that will be used as a clustering variable for robust standard error
+    computation.
+  }
+    
   \item{df_adj}{
-%%     ~~Describe \code{df_adj} here~~
-}
+    Logical (default FALSE); if TRUE, the estimated variance/covariance
+    matrix of the regression parameters is multiplied by \code{N /
+    (N-p)}, where \code{N} is the number of observations used in the
+    model fit and \code{p} is the number of regression parameters
+    (including an intercept, if any).
+  }
+
   \item{stderr}{
-%%     ~~Describe \code{stderr} here~~
-}
-  \item{offset}{
-%%     ~~Describe \code{offset} here~~
-}
-  \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
-\value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
-\examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (formula, data, subset, weights, na.action, method = "qr", 
-    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = FALSE, 
-    contrasts = NULL, reliability = NULL, Sigma_error = NULL, 
-    cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset, 
-    ...) 
-{
-    if (singular.ok) {
-        stop("singular EIV models not currently implemented")
-    }
-    if ((is.null(reliability) && is.null(Sigma_error)) || (!is.null(reliability) && 
-        !is.null(Sigma_error))) {
-        stop("exactly one of 'reliability' or 'Sigma_error' must be specified")
-    }
-    if (!is.null(reliability)) {
-        if (!is.numeric(reliability) || !is.vector(reliability) || 
-            !is.null(dim(reliability))) {
-            stop("reliability must be numeric vector")
-        }
-        if (any(is.na(reliability))) {
-            stop("reliability cannot have missing values")
-        }
-        relnames <- names(reliability)
-        if (is.null(relnames)) {
-            stop("reliability vector must be named")
-        }
-        if (any(duplicated(relnames))) {
-            stop("reliability names not unique")
-        }
-        if (any(reliability <= 0) || any(reliability > 1)) {
-            stop("reliability must take values in (0,1]")
-        }
-        numep <- length(reliability)
-    }
-    if (!is.null(Sigma_error)) {
-        if (!is.numeric(Sigma_error) || !is.matrix(Sigma_error) || 
-            (nrow(Sigma_error) != ncol(Sigma_error))) {
-            stop("Sigma_error must be square numeric matrix")
-        }
-        if (any(is.na(Sigma_error))) {
-            stop("Sigma_error cannot have missing values")
-        }
-        if (is.null(dimnames(Sigma_error))) {
-            stop("Sigma_error must have dimnames")
-        }
-        numep <- nrow(Sigma_error)
-        .colnames <- colnames(Sigma_error)
-        .rownames <- rownames(Sigma_error)
-        if (!is.null(.colnames) && !is.null(.rownames) && any(.colnames != 
-            .rownames)) {
-            stop("measurement error covariance matrix has mismatched row and column names")
-        }
-        if (!is.null(.colnames)) {
-            relnames <- rownames(Sigma_error) <- .colnames
-        }
-        else {
-            relnames <- colnames(Sigma_error) <- .rownames
-        }
-        if (any(duplicated(relnames))) {
-            stop("Sigma_error names not unique")
-        }
-        if ((max(abs(Sigma_error - t(Sigma_error))) > 1e-10) || 
-            any(eigen(Sigma_error)$values < 0)) {
-            stop("Sigma_error must be symmetric and positive semi-definite")
-        }
-    }
-    if (!is.null(cluster_varname)) {
-        if (!is.character(cluster_varname)) {
-            stop("cluster_varname must be a character string providing the name of the clustering variable")
-        }
-        if (!is.data.frame(data)) {
-            stop("cluster option requires data argument")
-        }
-        if (!(cluster_varname \%in\% names(data))) {
-            stop("cluster_varname is not in data")
-        }
-    }
-    ret.x <- x
-    ret.y <- y
-    cl <- match.call()
-    mf <- match.call(expand.dots = FALSE)
-    m <- match(c("formula", "data", "subset", "weights", "na.action", 
-        "offset"), names(mf), 0L)
-    mf <- mf[c(1L, m)]
-    mf$drop.unused.levels <- TRUE
-    mf[[1L]] <- quote(stats::model.frame)
-    mf <- eval(mf, parent.frame())
-    if (method == "model.frame") {
-        return(mf)
-    }
-    else if (method != "qr") {
-        warning(gettextf("method = '\%s' is not supported. Using 'qr'", 
-            method), domain = NA)
-    }
-    mt <- attr(mf, "terms")
-    y <- model.response(mf, "numeric")
-    w <- as.vector(model.weights(mf))
-    if (!is.null(w) && !is.numeric(w)) {
-        stop("'weights' must be a numeric vector")
-    }
-    if (!is.null(w)) {
-        if (any(w <= 0)) {
-            stop("weights must be positive")
-        }
-        w <- length(w) * (w/sum(w))
-    }
-    offset <- as.vector(model.offset(mf))
-    if (!is.null(offset)) {
-        if (length(offset) != NROW(y)) {
-            stop(gettextf("number of offsets is \%d, should equal \%d (number of observations)", 
-                length(offset), NROW(y)), domain = NA)
-        }
-    }
-    if (is.empty.model(mt)) {
-        x <- NULL
-        z <- list(coefficients = if (is.matrix(y)) matrix(, 0, 
-            3) else numeric(), residuals = y, fitted.values = 0 * 
-            y, weights = w, rank = 0L, df.residual = if (!is.null(w)) sum(w != 
-            0) else if (is.matrix(y)) nrow(y) else length(y))
-        if (!is.null(offset)) {
-            z$fitted.values <- offset
-            z$residuals <- y - offset
-        }
-    }
-    else {
-        x <- model.matrix(mt, mf, contrasts)
-        z <- if (is.null(w)) 
-            lm.fit(x, y, offset = offset, singular.ok = singular.ok, 
-                ...)
-        else lm.wfit(x, y, w, offset = offset, singular.ok = singular.ok, 
-            ...)
-    }
-    class(z) <- c(if (is.matrix(y)) "mlm", "lm")
-    z$na.action <- attr(mf, "na.action")
-    z$offset <- offset
-    z$contrasts <- attr(x, "contrasts")
-    z$xlevels <- .getXlevels(mt, mf)
-    z$call <- cl
-    z$terms <- mt
-    if (model) 
-        z$model <- mf
-    if (ret.x) 
-        z$x <- x
-    if (ret.y) 
-        z$y <- y
-    class(z) <- c("eivlm")
-    if (is.null(x)) {
-        return(z)
-    }
-    if (NCOL(y) > 1) {
-        stop("EIV models with matrix response not currently implemented")
-    }
-    z$N <- .N <- nrow(x)
-    if (is.null(offset)) {
-        offset <- rep(0, .N)
-    }
-    ymo <- y - offset
-    if (!is.null(w)) {
-        wgt <- z$weights
-    }
-    else {
-        wgt <- rep(1, .N)
-    }
-    if (!is.null(cluster_varname)) {
-        z$cluster_varname <- cluster_varname
-        z$cluster_values <- data[, cluster_varname]
-        if (!is.null(attr(mf, "na.action"))) {
-            z$cluster_values <- z$cluster_values[setdiff(1:nrow(data), 
-                as.vector(attr(mf, "na.action")))]
-            stopifnot(length(z$cluster_values) == .N)
-        }
-        if (any(is.na(z$cluster_values))) {
-            stop("clustering variable cannot have missing values among cases used in estimation")
-        }
-        z$cluster_num <- length(unique(z$cluster_values))
-        if (z$cluster_num < 2) {
-            stop("clustering variable must take on at least two distinct values")
-        }
-    }
-    v <- attributes(mt)$term.labels
-    if (!all(relnames \%in\% v)) {
-        stop("there do not appear to be main effects for all error-prone variables")
-    }
-    if (!all(attributes(mt)$dataClasses[relnames] == "numeric")) {
-        stop("error-prone variables must be numeric")
-    }
-    v <- make.names(v)
-    ok <- sapply(relnames, function(n) {
-        length(grep(paste("^", n, "\\.+|\\.+", n, "\\.+|\\.+", 
-            n, "$", sep = ""), v)) == 0
-    })
-    if (!all(ok)) {
-        stop("at least one error-prone variable is used in a term that is not a main effect\n  Not currently implemented")
-    }
-    tmp <- cov.wt(cbind(ymo, x), wt = wgt, method = "ML")
-    meanYWZ <- tmp$center
-    varYWZ <- tmp$cov
-    rm(tmp)
-    gc()
-    XpX <- crossprod(qr.R(z$qr))
-    S <- matrix(0, ncol = ncol(XpX), nrow = nrow(XpX))
-    dimnames(S) <- dimnames(XpX)
-    posep <- match(relnames, colnames(S))
-    stopifnot(all(relnames == colnames(x)[posep]))
-    if (!is.null(reliability)) {
-        diag(S)[posep] <- .N * (1 - reliability) * diag(varYWZ)[1 + 
-            posep]
-    }
-    else {
-        for (.i in 1:numep) {
-            for (.j in 1:numep) {
-                S[posep[.i], posep[.j]] <- .N * Sigma_error[.i, 
-                  .j]
-            }
-        }
-    }
-    varYXZ <- varYWZ - (rbind(rep(0, ncol(x) + 1), cbind(rep(0, 
-        ncol(x)), S))/.N)
-    if (any(eigen(varYXZ)$values < -1e-08)) {
-        stop("reliability is too small (or measurement error variances are too large)")
-    }
-    gc(verbose = FALSE)
-    z$unadj_coefficients <- z$coefficients
-    z$coefficients <- bhat <- drop(solve(XpX - S, crossprod(x * 
-        wgt, ymo)))
-    z$unadj_fitted.values <- z$fitted.values
-    z$fitted.values <- drop(x \%*\% bhat) + offset
-    z$unadj_residuals <- z$residuals
-    z$residuals <- y - z$fitted.values
-    z$unadj_effects <- z$effects
-    z$effects <- NULL
-    if (!qr) {
-        z$qr <- NULL
-    }
-    else {
-        z$unadj_qr <- z$qr
-        z$qr <- NULL
-    }
-    z$reliability <- reliability
-    z$Sigma_error <- Sigma_error
-    z$relnames <- relnames
-    z$XpX_adj <- XpX - S
-    z$varYXZ <- varYXZ
-    z$latent_resvar <- (sum(wgt * (ymo^2)) - as.numeric(matrix(bhat, 
-        nrow = 1) \%*\% z$XpX_adj \%*\% matrix(bhat, ncol = 1)))/z$df.residual
-    if (stderr) {
-        if (!is.null(reliability)) {
-            get_psi_and_psidot <- function(i, theta) {
-                stopifnot(length(theta) == (2 * numep + ncol(x)))
-                vhat <- rep(0, ncol(x))
-                vhat[posep] <- (1 - reliability) * theta[numep + 
-                  1:numep]
-                qi <- matrix(x[i, ], ncol = 1)
-                qqprime_adj <- qi \%*\% t(qi)
-                diag(qqprime_adj) <- diag(qqprime_adj) - vhat
-                psi <- as.vector(c(qi[posep, ] - theta[1:numep], 
-                  (qi[posep, ] - theta[1:numep])^2 - theta[numep + 
-                    1:numep], ymo[i] * qi - (qqprime_adj \%*\% 
-                    theta[2 * numep + 1:ncol(x)])))
-                row1 <- cbind(-1 * diag(numep), matrix(0, nrow = numep, 
-                  ncol = numep), matrix(0, nrow = numep, ncol = ncol(x)))
-                row2 <- cbind(-2 * diag(as.vector(qi[posep, ] - 
-                  theta[1:numep]), nrow = numep, ncol = numep), 
-                  -1 * diag(numep), matrix(0, nrow = numep, ncol = ncol(x)))
-                tmp <- matrix(0, nrow = ncol(x), ncol = numep)
-                for (j in 1:numep) {
-                  tmp[posep[j], j] <- (1 - reliability[j]) * 
-                    theta[2 * numep + posep[j]]
-                }
-                row3 <- cbind(matrix(0, nrow = ncol(x), ncol = numep), 
-                  tmp, -1 * qqprime_adj)
-                psidot <- rbind(row1, row2, row3)
-                stopifnot((nrow(psidot) == ncol(psidot)) && (nrow(psidot) == 
-                  (2 * numep + ncol(x))))
-                return(list(psi = psi, psidot = psidot))
-            }
-        }
-        else {
-            get_psi_and_psidot <- function(i, theta) {
-                stopifnot(length(theta) == ncol(x))
-                qi <- matrix(x[i, ], ncol = 1)
-                qqprime_adj <- qi \%*\% t(qi)
-                qqprime_adj <- qqprime_adj - (S/.N)
-                return(list(psi = as.vector(ymo[i] * qi - (qqprime_adj \%*\% 
-                  theta)), psidot = -1 * qqprime_adj))
-            }
-        }
-        if (!is.null(reliability)) {
-            thetahat <- c(meanYWZ[1 + posep], diag(varYWZ)[1 + 
-                posep], bhat)
-        }
-        else {
-            thetahat <- bhat
-        }
-        psi <- matrix(0, nrow = .N, ncol = length(thetahat))
-        psidot <- matrix(0, nrow = length(thetahat), ncol = length(thetahat))
-        for (i in 1:.N) {
-            tmp <- get_psi_and_psidot(i, theta = thetahat)
-            psi[i, ] <- tmp$psi
-            psidot <- psidot + (wgt[i] * tmp$psidot)
-        }
-        psidot <- psidot/.N
-        if (max(abs(apply(psi, 2, FUN = weighted.mean, w = wgt))) > 
-            1e-10) {
-            stop("EIV solution does not satisfy estimating equations - consider changing scale of data")
-        }
-        gc(verbose = FALSE)
-        if (is.null(cluster_varname)) {
-            B <- crossprod(psi * wgt)
-        }
-        else {
-            grpsums <- apply(psi * wgt, 2, function(x) {
-                tapply(x, z$cluster_values, sum)
-            })
-            B <- Reduce("+", lapply(1:nrow(grpsums), function(i) {
-                tcrossprod(grpsums[i, ])
-            }))
-        }
-        Ainv <- solve(psidot)
-        fudge <- ifelse(df_adj, (.N/z$df.residual), 1) * ifelse(!is.null(z$cluster_varname), 
-            (z$cluster_num/(z$cluster_num - 1)), 1)
-        z$vcov <- fudge * (Ainv \%*\% (B/.N^2) \%*\% t(Ainv))
-        if (!is.null(reliability)) {
-            z$vcov <- z$vcov[2 * numep + 1:ncol(x), 2 * numep + 
-                1:ncol(x)]
-        }
-        rownames(z$vcov) <- colnames(z$vcov) <- colnames(x)
-        rm(psi, psidot)
-        gc(verbose = FALSE)
-    }
-    z
+    Logical (default TRUE); if FALSE, does not compute estimated
+    variance/covariance matrix of the regression parameters.
   }
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+
+\details{
+
+  \emph{Theory}
+
+  The EIV estimator applies when one wishes to estimate
+  the parameters of a linear regression of Y on (X,Z), but covariates
+  (W,Z) are instead observed, where W = X + U for mean zero measurement
+  error U. Additional assumptions are required about U for consistent
+  estimation; see references for details.
+
+  The standard EIV estimator of the regression coefficients is (Q'Q -
+  S)^{-1}Q'Y, where Q is the design matrix formed from (W,Z) and S is a
+  matrix that adjusts Q'Q to account for elements that are distorted due
+  to measurement error.
+
+  The estimated regression coefficients are solutions to a system of
+  estimating equations that depends on whether \code{reliability} or
+  \code{Sigma_error} is specified.  For each of these two cases,
+  standard errors for the estimated regression coefficients are computed
+  using standard results from M-estimation; see references.  For either
+  case, adjustments for clustering are provided if specified.
+
+  \emph{Syntax Details}
+
+  Exactly one of \code{reliability} or \code{Sigma_error} must be
+  specified in the call.  \code{Sigma_error} need not be diagonal in the
+  case of correlated measurement error across multiple error-prone
+  covariates.
+  
+  Error-prone variables must be included as linear main effects only; the
+  current version of the code does not allow interactions among
+  error-prone covariates, interactions of error-prone covariates with
+  error-free covariates, or nonlinear functions of error-prone
+  covariates.  The error-prone covariates cannot be specified with any
+  construction involving \code{I()}.
+
+  The current version does not allow \code{singular.ok=TRUE}.
+
+  It is strongly encouraged to use the \code{data} argument to pass a dataframe
+  containing all variables to be used in the regression, rather than
+  using a matrix on the right hand side of the regression formula.  In
+  addition, if \code{cluster_varname} is specified, everything including
+  the clustering variable must be passed as \code{data}.
+
+  If \code{weights} is specified, a weighted version of the EIV
+  estimator is computed using operations analogous to weighted least
+  squares in linear regression, and a standard error for this weighted
+  estimator is computed.  Weights must be positive and will be
+  normalized inside the function to sum to the number of observations
+  used to fit the model.  Cases with missing weights will get dropped
+  just like cases with missing covariates.
+
+  Different software packages that compute robust standard errors make
+  different choices about degrees-of-freedom adjustments intended to
+  improve small-sample coverage properties.  The \code{df_adj} argument
+  will inflate the estimated variance/covariance matrix of the estimated
+  regression coefficients by \code{N / (N-p)}; see Wooldridge (2002, p. 57).  In
+  addition, if \code{cluster_varname} is specified, the estimated
+  variance/covariance matrix will be inflated by \code{M / (M-1)} where
+  \code{M} is the number of unique clusters present in the estimation sample.
+}
+
+\value{
+  An list object of class \code{eivlm} with the following components:
+
+  \item{coefficients}{Estimated regression coefficients from EIV
+    model.
+  }
+
+  \item{residuals}{Residuals from fitted EIV model.
+  }
+
+  \item{rank}{Column rank of regression design matrix.
+  }
+
+  \item{fitted.values}{Fitted values from EIV model.
+  }
+
+  \item{N}{Number of observations used in fitted model.
+  }
+
+  \item{Sigma_error}{The measurement error covariance matrix, if
+    supplied.
+  }
+
+  \item{reliability}{The vector of reliabilities, if supplied.
+  }
+
+  \item{relnames}{The names of the error-prone covariates.
+  }
+
+  \item{XpX_adj}{The cross-product matrix of the regression, adjusted
+    for measurement error.
+  }
+
+  \item{varYXZ}{The maximum likelihood estimate of the covariance matrix
+    of the outcome Y, the latent covariates X and the observed, error-free
+    covariates Z.
+  }
+
+  \item{latent_resvar}{A degrees-of-freedom adjusted estimate of the
+    residual variance of the latent regression.  NOTE: this not an
+    estimate of the residual variance of the regression on the observed
+    covariates (W,Z), but rather an estimate of the residual variance of
+    the regression on (X,Z).
+  }
+
+  \item{vcov}{The estimated variance/covariance matrix of the regression
+    coefficients.
+  }
+
+  \item{cluster_varname, cluster_values, cluster_num}{If
+    \code{cluster_varname} is specified, it is returned in the object,
+    along with \code{cluster_values} providing the actual values of the
+    clustering variable for the cases used in the fitted model, and
+    \code{cluster_num}, the number of unique such clusters.
+  }
+
+  \item{OTHER}{ The object also includes components \code{assign},
+    \code{df.residual}, \code{xlevels}, \code{call}, \code{terms},
+    \code{model} and other optional components such as \code{weights},
+    depending on the call; see \code{\link{lm}}. In addition, the object
+    includes components \code{unadj_coefficients},
+    \code{unadj_fitted.values}, \code{unadj_residuals},
+    \code{unadj_effects}, and \code{unadj_qr} that are computed from the
+    "unadjusted" regression model that ignores measurement error; see
+    \code{\link{lm}}.
+  }
+}
+
+\references{
+  R.J. Carroll, D. Ruppert, L.A. Stefanski and C.M. Crainiceanu
+  (2006). \emph{Measurement Error in Nonlinear Models: A Modern
+    Perspective} (2nd edition).  London: Chapman & Hall.
+
+  W. Fuller (2006). \emph{Measurement Error Models} (2nd edition). New York: John
+  Wiley & Sons.
+  
+  L.A. Stefanksi and D.B. Boos (2002). \dQuote{The calculus of
+    {M}-estimation,} \emph{The American Statistician} 56(1):29-38.
+
+  J. Wooldridge (2002). \emph{Econometric Analysis of Cross Section and
+  Panel Data}. Cambridge, MA: MIT Press.
+}
+
+\author{
+  J.R. Lockwood \email{jrlockwood@ets.org}
+}
+
+%% \note{
+%% }
+%% \section{Warning }{....}
+
+\seealso{
+  \code{\link{summary.eivlm}}
+}
+
+\examples{
+## simulate data with covariates x1, x2 and z.
+.n    <- 1000
+.d    <- data.frame(x1 = rnorm(.n))
+.d$x2 <- sqrt(0.5)*.d$x1 + rnorm(.n, sd=sqrt(0.5))
+.d$z  <- as.numeric(.d$x1 + .d$x2 > 0)
+
+## generate outcome
+## true regression parameters are c(2,1,1,-1)
+.d$y  <- 2.0 + 1.0*.d$x1 + 1.0*.d$x2 - 1.0*.d$z + rnorm(.n)
+
+## generate error-prone covariates w1 and w2
+Sigma_error <- diag(c(0.20, 0.30))
+dimnames(Sigma_error) <- list(c("w1","w2"), c("w1","w2"))
+.d$w1 <- .d$x1 + rnorm(.n, sd = sqrt(Sigma_error["w1","w1"]))
+.d$w2 <- .d$x2 + rnorm(.n, sd = sqrt(Sigma_error["w2","w2"]))
+
+## fit EIV regression specifying known measurement error covariance matrix
+.mod1 <- eivreg(y ~ w1 + w2 + z, data = .d, Sigma_error = Sigma_error)
+print(class(.mod1))
+.tmp <- summary(.mod1)
+print(class(.tmp))
+print(.tmp)
+
+## fit EIV regression specifying known reliabilities:
+.lambda <- c(1,1) / (c(1,1) + diag(Sigma_error))
+.mod2 <- eivreg(y ~ w1 + w2 + z, data = .d, reliability = .lambda)
+print(summary(.mod2))
+}
+
+\keyword{models}
+\keyword{regression}

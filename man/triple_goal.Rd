@@ -14,7 +14,8 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 
 \arguments{
   \item{s}{
-    A (n x K) matrix of "n" samples of "K" group parameters.
+    A (n x K) matrix of "n" samples of "K" group parameters with no
+  missing values.
   }
   
   \item{stop.if.ties}{
@@ -68,6 +69,7 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 }
 
 \examples{
+set.seed(1001)
 .K <- 50
 .nsamp <- 500
 .theta_true <- rnorm(.K)

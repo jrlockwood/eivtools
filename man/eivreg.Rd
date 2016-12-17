@@ -67,16 +67,21 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
   estimation; see references for details.
 
   The standard EIV estimator of the regression coefficients is (Q'Q -
-  S)^\{-1\}Q'Y, where Q is the design matrix formed from (W,Z) and S is a
-  matrix that adjusts Q'Q to account for elements that are distorted due
-  to measurement error.
+  S)^\{-1\}Q'Y, where Q is the design matrix formed from (W,Z) and S is
+  a matrix that adjusts Q'Q to account for elements that are distorted
+  due to measurement error.  The value of S depends on whether
+  \code{reliability} or \code{Sigma_error} is specified.  When
+  \code{Sigma_error} is specified, S is known.  When \code{reliability}
+  is specified, S must be estimated using the marginal variances of the
+  observed error-prone covariates. 
 
   The estimated regression coefficients are solutions to a system of
-  estimating equations that depends on whether \code{reliability} or
-  \code{Sigma_error} is specified.  For each of these two cases,
-  standard errors for the estimated regression coefficients are computed
-  using standard results from M-estimation; see references.  For either
-  case, adjustments for clustering are provided if specified.
+  estimating equations, and both the system of equations and the
+  solutions depend on whether \code{reliability} or \code{Sigma_error}
+  is specified.  For each of these two cases, standard errors for the
+  estimated regression coefficients are computed using standard results
+  from M-estimation; see references.  For either case, adjustments for
+  clustering are provided if specified.
 
   \emph{Syntax Details}
 
@@ -214,6 +219,7 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 }
 
 \examples{
+set.seed(1001)
 ## simulate data with covariates x1, x2 and z.
 .n    <- 1000
 .d    <- data.frame(x1 = rnorm(.n))
@@ -237,7 +243,10 @@ print(class(.mod1))
 print(class(.tmp))
 print(.tmp)
 
-## fit EIV regression specifying known reliabilities:
+## fit EIV regression specifying known reliabilities.  Note that
+## point estimator is slightly different from .mod1 because
+## the correction matrix S must be estimated when the reliability
+## is known.
 .lambda <- c(1,1) / (c(1,1) + diag(Sigma_error))
 .mod2 <- eivreg(y ~ w1 + w2 + z, data = .d, reliability = .lambda)
 print(summary(.mod2))

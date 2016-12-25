@@ -9,7 +9,11 @@
   \code{eivlm} returns an object of class \code{summary.eivlm}.}
 
 \usage{
-\method{print}{summary.eivlm}(x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor, signif.stars = getOption("show.signif.stars"), ...)
+\method{print}{summary.eivlm}(x,
+digits = max(3L, getOption("digits") - 3L),
+symbolic.cor = x$symbolic.cor,
+signif.stars = getOption("show.signif.stars"),
+...)
 }
 
 \arguments{

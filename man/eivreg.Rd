@@ -21,7 +21,11 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 \arguments{
   
   \item{formula, data, subset, weights, na.action, method, model, x, y,
-    qr, singular.ok, contrasts, offset, \dots}{
+    qr}{
+    See documentation for \code{\link{lm}}.
+  }
+
+  \item{singular.ok, contrasts, offset, \dots}{
     See documentation for \code{\link{lm}}.
   }
   
@@ -60,20 +64,22 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 
   \emph{Theory}
 
-  The EIV estimator applies when one wishes to estimate
-  the parameters of a linear regression of Y on (X,Z), but covariates
-  (W,Z) are instead observed, where W = X + U for mean zero measurement
-  error U. Additional assumptions are required about U for consistent
-  estimation; see references for details.
+  The EIV estimator applies when one wishes to estimate the parameters
+  of a linear regression of \eqn{Y}{Y} on \eqn{(X,Z)}{(X,Z)}, but
+  covariates \eqn{(W,Z)}{(W,Z)} are instead observed, where \eqn{W = X +
+  U}{W = X + U} for mean zero measurement error \eqn{U}{U}. Additional
+  assumptions are required about \eqn{U}{U} for consistent estimation;
+  see references for details.
 
-  The standard EIV estimator of the regression coefficients is (Q'Q -
-  S)^\{-1\}Q'Y, where Q is the design matrix formed from (W,Z) and S is
-  a matrix that adjusts Q'Q to account for elements that are distorted
-  due to measurement error.  The value of S depends on whether
+  The standard EIV estimator of the regression coefficients is \eqn{(Q'Q
+  - S)^{-1}Q'Y}{(Q'Q - S)\^\{-1\}Q'Y}, where \eqn{Q}{Q} is the design
+  matrix formed from \eqn{(W,Z)}{(W,Z)} and \eqn{S}{S} is a matrix that
+  adjusts \eqn{Q'Q}{Q'Q} to account for elements that are distorted due
+  to measurement error.  The value of \eqn{S}{S} depends on whether
   \code{reliability} or \code{Sigma_error} is specified.  When
-  \code{Sigma_error} is specified, S is known.  When \code{reliability}
-  is specified, S must be estimated using the marginal variances of the
-  observed error-prone covariates. 
+  \code{Sigma_error} is specified, \eqn{S}{S} is known.  When
+  \code{reliability} is specified, \eqn{S}{S} must be estimated using
+  the marginal variances of the observed error-prone covariates.
 
   The estimated regression coefficients are solutions to a system of
   estimating equations, and both the system of equations and the
@@ -157,16 +163,14 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
   }
 
   \item{varYXZ}{The maximum likelihood estimate of the covariance matrix
-    of the outcome Y, the latent covariates X and the observed, error-free
-    covariates Z.
-  }
+    of the outcome \eqn{Y}{Y}, the latent covariates X and the observed,
+    error-free covariates \eqn{Z}{Z}.  }
 
   \item{latent_resvar}{A degrees-of-freedom adjusted estimate of the
     residual variance of the latent regression.  NOTE: this not an
     estimate of the residual variance of the regression on the observed
-    covariates (W,Z), but rather an estimate of the residual variance of
-    the regression on (X,Z).
-  }
+    covariates \eqn{(W,Z)}{(W,Z)}, but rather an estimate of the
+    residual variance of the regression on \eqn{(X,Z)}{(X,Z)}.  }
 
   \item{vcov}{The estimated variance/covariance matrix of the regression
     coefficients.
@@ -186,10 +190,8 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
     includes components \code{unadj_coefficients},
     \code{unadj_fitted.values}, \code{unadj_residuals},
     \code{unadj_effects}, and \code{unadj_qr} that are computed from the
-    "unadjusted" regression model that ignores measurement error; see
-    \code{\link{lm}}.
-  }
-}
+    unadjusted regression model that ignores measurement error; see
+    \code{\link{lm}}.  } }
 
 \references{
   Carroll R.J, Ruppert D., Stefanski L.A. and Crainiceanu C.M.

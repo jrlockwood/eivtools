@@ -3,10 +3,10 @@
 
 \title{Shen and Louis (1998) Triple Goal Estimators}
 
-\description{ \code{triple_goal} implements the "Triple Goal" estimates
+\description{ \code{triple_goal} implements the \dQuote{Triple Goal} estimates
   of Shen and Louis (1998) for a vector of parameters given a sample
   from the posterior distribution of those parameters.  Also computes
-  "constrained Bayes" estimators of Ghosh (1992).}
+  \dQuote{constrained Bayes} estimators of Ghosh (1992).}
 
 \usage{
 triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
@@ -14,8 +14,8 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
 
 \arguments{
   \item{s}{
-    A (n x K) matrix of "n" samples of "K" group parameters with no
-  missing values.
+    A \code{(n x K)} matrix of \code{n} samples of \code{K} group
+    parameters with no missing values.
   }
   
   \item{stop.if.ties}{
@@ -24,29 +24,29 @@ triple_goal(s, stop.if.ties = FALSE, quantile.type = 7)
   }
   
   \item{quantile.type}{
-    "type" argument to \code{\link{quantile}} function for different
+    \code{type} argument to \code{\link{quantile}} function for different
     methods of computing quantiles.
   }
 }
 
 \details{
   In typical applications, the matrix \code{s} will be a sample of size
-  "n" from the joint posterior distribution of a vector of
-  "K" group-specific parameters.  Both the triple goal and constrained
+  \code{n} from the joint posterior distribution of a vector of
+  \code{K} group-specific parameters.  Both the triple goal and constrained
   Bayes estimators are designed to mitigate problems arising from
   underdispersion of posterior means; see references.
 }
 
-\value{A dataframe with "K" rows with fields:
+\value{A dataframe with \code{K} rows with fields:
   \item{theta_pm}{Posterior mean estimates of group parameters.}
 
   \item{theta_psd}{Posterior standard deviation estimates of group
     parameters.}
 
-  \item{theta_cb}{"Constrained Bayes" estimates of group parameters
+  \item{theta_cb}{\dQuote{Constrained Bayes} estimates of group parameters
     using formula in Shen and Louis (1998).}
 
-  \item{theta_gr}{"Triple Goal" estimates of group parameters using
+  \item{theta_gr}{\dQuote{Triple Goal} estimates of group parameters using
     algorithm defined in Shen and Louis (1998).}
 
   \item{rbar}{Posterior means of ranks of group parameters (1=lowest).}
@@ -73,7 +73,8 @@ set.seed(1001)
 .K <- 50
 .nsamp <- 500
 .theta_true <- rnorm(.K)
-.s <- matrix(.theta_true, ncol=.K, nrow=.nsamp, byrow=TRUE) + matrix(rnorm(.K*.nsamp, sd=0.4), ncol=.K, nrow=.nsamp)
+.s <- matrix(.theta_true, ncol=.K, nrow=.nsamp, byrow=TRUE) +
+      matrix(rnorm(.K*.nsamp, sd=0.4), ncol=.K, nrow=.nsamp)
 .e <- triple_goal(.s)
 str(.e)
 head(.e)

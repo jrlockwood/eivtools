@@ -392,7 +392,7 @@ eivreg <- function(formula, data, subset, weights, na.action, method = "qr", mod
             psidot  <- psidot + (wgt[i] * tmp$psidot)
         }
         psidot <- psidot / .N
-        if(max(abs(apply(psi, 2, FUN = weighted.mean, w = wgt))) > 1e-10){
+        if(max(abs(apply(psi, 2, FUN = weighted.mean, w = wgt))) > 1e-9){
             stop("EIV solution does not satisfy estimating equations - consider changing scale of data")
         }    
         gc(verbose=FALSE)

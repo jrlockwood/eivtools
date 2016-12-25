@@ -33,7 +33,17 @@
   
   Fuller W. (2006). \emph{Measurement Error Models} (2nd edition). New York: John
   Wiley & Sons.
-  
+
+  Lockwood J.R and McCaffrey D.F. (2014). \dQuote{Correcting for test
+    score measurement error in ANCOVA models for estimating treatment
+    effects,} \emph{Journal of Educational and Behavioral Statistics}
+  39(1):22-52.
+
+  Rabe-Hesketh S., Pickles A. and Skrondal A. (2003). \dQuote{Correcting
+  for covariate measurement error in logistic regression using
+  nonparametric maximum likelihood estimation,} \emph{Statistical
+  Modelling} 3:215-232.
+
   Stefanksi L.A. and Boos D.B. (2002). \dQuote{The calculus of
     {M}-estimation,} \emph{The American Statistician} 56(1):29-38.
 

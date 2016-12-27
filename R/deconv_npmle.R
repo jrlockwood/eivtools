@@ -1,22 +1,48 @@
 deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0.0005, lltol = 1e-7, psmall = 0.00005, discrete = FALSE, quietly = FALSE){
     
-    stopifnot( all(!is.na(W)) && is.function(csem) && (xmin < xmax) && (lambda > 0) && (lltol > 0) )
-    if(discrete){
-        stop("discrete option not currently implemented")
+    if(any(is.na(W))){
+        stop("missing values not allowed in W")
     }
+
+    if(!is.function(csem)){
+        stop("csem must be a function")
+    }
+    
+    if(xmax <= xmin){
+        stop("invalid xmax/xmin")
+    }
+    
     if(min(W) < xmin){
         stop("xmin exceeds smallest data value, consider decreasing xmin")
     }
+    
     if(max(W) > xmax){
         stop("largest data value exceeds xmax; consider increasing xmax")
     }
     
+    if(lambda <= 0){
+        stop("invalid lambda")
+    }
+    
+    if(lltol <= 0){
+        stop("invalid lltol")
+    }
+
+    if(psmall <= 0){
+        stop("invalid psmall")
+    }
+    
+    if(discrete){
+        stop("discrete option not currently implemented")
+    }
+    
     ## NOTE: we collapse over repeat W values when possible, using "counts" to contribute to likelihood
-    .W <- sort(unique(W))
-    nW <- length(.W)
+    varw    <- var(W)
+    .W      <- sort(unique(W))
+    nW      <- length(.W)
     .counts <- sapply(.W, function(x){ sum(W == x) })
     stopifnot(sum(.counts) == length(W))
-    W <- .W
+    W       <- .W
     
     ## functions to map probabilities to reduced-dimension unconstrained scale, and inverse
     theta_to_p <- function(theta){
@@ -47,6 +73,15 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
     ## build (nW x ngrid) matrix of conditional densities
     grid      <- seq(from=xmin, to=xmax, length=ngrid)
     grid.csem <- csem(grid)
+
+    if(length(grid.csem) != length(grid)){
+        stop("csem() is not returning a vector of appropriate length")
+    }
+
+    if(any(grid.csem < 0)){
+        stop("csem() resulted in negative values somewhere on the grid")
+    }
+    
     ## if(!discrete){
     fwx <- dnorm( matrix(W,ncol=ngrid,nrow=nW), mean=matrix(grid,ncol=ngrid,nrow=nW,byrow=T), sd=matrix(grid.csem,ncol=ngrid,nrow=nW,byrow=T))
     ##  } else { ## uses pxgu - fwx[i,j] = p(W=W[i] | X = grid[j])
@@ -57,14 +92,13 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
   
     ## negative log likelihood for a set of probabilities given ".inds" which are
     ## indices of "grid" and which are continually updated
-    ## NOTE: updated to use counts
     negll <- function(theta){
         -sum(.counts * log(as.vector(fwx[,.inds] %*% theta_to_p(theta))))
     }
     
     ## find initial best grid point.  NOTE this will often want the X with the
     ## biggest CSEM because a single point is inconsistent with most W unless the
-    ## CSEM is large. the exception is if we pick ugrid to be very large, then it
+    ## CSEM is large. the exception is if we pick grid to be very large, then it
     ## will find interior point.  however even if it picks an extreme starting
     ## point, that point will be dropped later if it is too far in the tails.
     ll <- apply(fwx, 2, function(x){ sum(.counts * log(x)) })
@@ -91,7 +125,9 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
             .eligible <- setdiff(.eligible, .eligible[w])
             
             ## set starting value: mass 0.05 at new value, normalized p on existing values
-            o <- optim(p_to_theta(c(0.95*(.probs/sum(.probs)), 0.05)), negll, method  = "BFGS", control = list(maxit=1000, trace=5*(1 - as.numeric(quietly)), REPORT = 1))
+            o <- optim(p_to_theta(c(0.95*(.probs/sum(.probs)), 0.05)), negll,
+                       method  = "BFGS",
+                       control = list(maxit=1000, trace=5*(1 - as.numeric(quietly)), REPORT = 1))
             .probs <- theta_to_p(o$par)
             ll.current <- -o$value
             
@@ -123,5 +159,31 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
             }
         }
     }
-    return(list(.history = .history, px = .history[[length(.history)]]))
+    
+    px <- .history[[length(.history)]]
+
+    ######################################################
+    ## compute SIMEX variance functions using Bayes' rule
+    ######################################################
+    vsimex <- data.frame(W   = .W,
+                         gW  = (csem(.W))^2)
+
+    ## for each observed W, compute g(E[X|W])
+    vsimex$gEXW <- sapply(vsimex$W, function(w){
+        pxw <- dnorm(w, mean = px$x, sd = csem(px$x)) * px$p
+        pxw <- pxw / sum(pxw)
+        return( (csem( sum(px$x * pxw) ))^2 )
+    })
+
+    ## for each observed W, compute E[g(X)|W]
+    vsimex$EgXW <- sapply(vsimex$W, function(w){
+        pxw <- dnorm(w, mean = px$x, sd = csem(px$x)) * px$p
+        pxw <- pxw / sum(pxw)
+        return( sum( (csem(px$x)^2) * pxw ) )
+    })
+    
+    return(list(.history       = .history,
+                px             = px,
+                reliability    = px$varx[1] / varw,
+                simex_varfuncs = vsimex))
 }

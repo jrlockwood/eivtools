@@ -87,23 +87,55 @@ discrete = FALSE, quietly = FALSE)
   given the scale of \code{W}.
 }
 
-\value{A list with elements \code{.history}, providing
-  iteration-by-iteration evolution of estimated distribution,
-  and \code{px}, providing the final estimated distribution
-  as a dataframe with as many rows as there are mass points
-  in the NPMLE distribution, and fields:
+\value{A list with elements
+
+  \itemize{
+    \item{.history: }{Iteration-by-iteration evolution of estimated
+      distribution}
+    
+    \item{px: }{A dataframe providing the final NPMLE distribution.  There
+      are as many rows as there are mass points in the estimated
+      distribution; fields described below}
+    
+    \item{reliability: }{An estimate of the reliability of \code{W}, equal
+      to the estimated variance of \code{X} divided by the sample variance
+      of \code{W}}
+    
+    \item{simex_varfuncs: }{A dataframe with as many rows as there are
+      unique values of \code{W}, providing estimated plug-in variance
+      functions to use for SIMEX data generation with latent
+      heteroskedastic error as described in Lockwood and McCaffrey
+      (forthcoming); see references.  Fields described below} }
   
-  \item{x}{Location of mass point}
+  The fields of \code{px} are:
 
-  \item{csem}{Value of function \code{csem} at mass point}
+  \itemize{
+    \item{x: }{Location of mass point}
+    
+    \item{csem: }{Value of function \code{csem} at mass point}
+    
+    \item{p: }{probability at mass point}
+    
+    \item{ll: }{log likelihood at solution}
+    
+    \item{ex: }{Estimate of mean of latent distribution}
+    
+    \item{varx: }{Estimate of variance of latent distribution}
+  }
 
-  \item{p}{probability at mass point}
+  The fields of \code{simex_varfuncs} are:
 
-  \item{ll}{log likelihood at solution}
-
-  \item{ex}{Estimate of mean of latent distribution}
-
-  \item{varx}{Estimate of variance of latent distribution}
+  \itemize{
+    \item{W: }{Unique observed values \code{w} of \code{W}}
+    
+    \item{gW: }{The square of \code{csem} evaluated at \code{W = w}}
+    
+    \item{gEXW: }{The square of \code{csem} evaluated at \code{E[X | W=w]}, the
+      conditional mean of \code{X} given \code{W=w}}
+    
+    \item{EgXW: }{The conditional mean of the square of \code{csem} of
+      \code{X} given \code{W=w}, equal to \code{E[g(X) | W=w]}}
+  }
 }
 
 \references{
@@ -111,6 +143,10 @@ discrete = FALSE, quietly = FALSE)
     score measurement error in ANCOVA models for estimating treatment
     effects,} \emph{Journal of Educational and Behavioral Statistics}
   39(1):22-52.
+
+  Lockwood J.R. and McCaffrey D.F. (forthcoming).
+  \dQuote{Simulation-extrapolation with latent heteroskedastic
+    variance,} \emph{Psychometrika}.
   
   Rabe-Hesketh S., Pickles A. and Skrondal A. (2003). \dQuote{Correcting
   for covariate measurement error in logistic regression using
@@ -144,31 +180,37 @@ m <- deconv_npmle(W       = testscores$math_lag1,
                   xmin    = min(testscores$math_lag1),
                   xmax    = max(testscores$math_lag1),
                   ngrid   = 10000,
-                  quietly = TRUE)$px
+                  quietly = TRUE)
 
-print(m)
+print(m$px)
+
 ## estimated mean is approximately the mean of W, but
 ## the estimated variance is less than the variance of W,
 ## as it should be
 print(c(empirical = mean(testscores$math_lag1),
-        estimated = m$ex[1]))
+        estimated = m$px$ex[1]))
 
 print(c(empirical = var(testscores$math_lag1),
-        estimated = m$varx[1]))
+        estimated = m$px$varx[1]))
 
 ## estimated reliability of W:
-print(lambdahat <- m$varx[1] / var(testscores$math_lag1))
+print(m$reliability)
+
+## if implementing SIMEX, simex_varfuncs provides plug-in
+## options to use for the heteroskedastic error variance
+## of each observed W
+print(m$simex_varfuncs)
 
 ## simple "value-added" estimates of school effects on math,
 ## adjusting for measurement error in the lag 1 math score.
 testscores$schoolid <- factor(testscores$schoolid)
 
-m <- eivreg(math ~ math_lag1 + sped + frl + schoolid,
-            data = testscores,
-            reliability = c(math_lag1 = lambdahat),
-            contrasts = list(schoolid = "contr.sum"))
+meiv <- eivreg(math ~ math_lag1 + sped + frl + schoolid,
+         data = testscores,
+         reliability = c(math_lag1 = m$reliability),
+         contrasts = list(schoolid = "contr.sum"))
 
-print(summary(m))
+print(summary(meiv))
 }
 
 \keyword{models}

@@ -39,6 +39,10 @@
     effects,} \emph{Journal of Educational and Behavioral Statistics}
   39(1):22-52.
 
+  Lockwood J.R. and McCaffrey D.F. (forthcoming).
+  \dQuote{Simulation-extrapolation with latent heteroskedastic
+    variance,} \emph{Psychometrika}.
+  
   Rabe-Hesketh S., Pickles A. and Skrondal A. (2003). \dQuote{Correcting
   for covariate measurement error in logistic regression using
   nonparametric maximum likelihood estimation,} \emph{Statistical

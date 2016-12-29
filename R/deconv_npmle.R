@@ -1,4 +1,4 @@
-deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0.0005, lltol = 1e-7, psmall = 0.00005, discrete = FALSE, quietly = FALSE){
+deconv_npmle <- function(W, csem, gridspec = list(xmin=-5, xmax=5, numpoints=2000), lambda = 0.0005, lltol = 1e-7, psmall = 0.00005, discrete = FALSE, quietly = FALSE){
     
     if(any(is.na(W))){
         stop("missing values not allowed in W")
@@ -7,17 +7,63 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
     if(!is.function(csem)){
         stop("csem must be a function")
     }
+
+    if(is.list(gridspec)){
+        
+        if( !( all(names(gridspec) == c("xmin","xmax","numpoints")) ) ){
+            stop("if specifiying gridspec in list form, must be named list with elements 'xmin','xmax' and 'numpoints'")
+        }
+
+        if( !is.numeric(gridspec$xmin) || (length(gridspec$xmin) > 1) ){
+            stop("'xmin' element of gridspec must be single numeric value'")
+        }
+
+        if( !is.numeric(gridspec$xmax) || (length(gridspec$xmax) > 1) ){
+            stop("'xmax' element of gridspec must be single numeric value'")
+        }
+        
+        if(gridspec$xmax <= gridspec$xmin){
+            stop("invalid xmax/xmin in gridspec")
+        }
+
+        if( !is.numeric(gridspec$numpoints) || (length(gridspec$numpoints) > 1) ){
+            stop("'numpoints' element of gridspec must be single integer value")
+        }
+
+        if(min(W) < gridspec$xmin){
+            stop("xmin exceeds smallest data value, consider decreasing xmin")
+        }
     
-    if(xmax <= xmin){
-        stop("invalid xmax/xmin")
-    }
-    
-    if(min(W) < xmin){
-        stop("xmin exceeds smallest data value, consider decreasing xmin")
-    }
-    
-    if(max(W) > xmax){
-        stop("largest data value exceeds xmax; consider increasing xmax")
+        if(max(W) > gridspec$xmax){
+            stop("largest data value exceeds xmax; consider increasing xmax")
+        }
+
+        gridspec$grid <- seq(from   = gridspec$xmin,
+                             to     = gridspec$xmax,
+                             length = gridspec$numpoints)
+        
+    } else {
+
+        if( !is.numeric(gridspec) ){
+            stop("if not a list, 'gridspec' must be a numeric vector of grid points")
+        }
+
+        if( any(is.na(gridspec)) ){
+            stop("missing values in specified grid")
+        }
+
+        if( length(unique(gridspec)) != length(gridspec) ){
+            stop("specified grid has duplicate values")
+        }
+
+        if( any(sort(gridspec) != gridspec) ){
+            stop("specified grid is not sorted in increasing numeric order")
+        }
+
+        gridspec <- list(xmin      = min(gridspec),
+                         xmax      = max(gridspec),
+                         numpoints = length(gridspec),
+                         grid      = gridspec)
     }
     
     if(lambda <= 0){
@@ -63,18 +109,18 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
             return(log(p[1:(last-1)] * (1 + ((1-p[last])/p[last])) ))
         }
     }
-  
+
     ## CHECKS:
-    ## p <- c(0.1, 0.2, 0.4, 0.3); print(ma(p - theta_to_p(p_to_theta(p))))
-    ## theta <- c(-3.2, 1.0, -1.0); print(ma(theta - p_to_theta(theta_to_p(theta))))
-    ## print(ma(1 - theta_to_p(p_to_theta(1))))
+    ##
+    ## p <- c(0.1, 0.2, 0.4, 0.3); print(max(abs(p - theta_to_p(p_to_theta(p)))))
+    ## theta <- c(-3.2, 1.0, -1.0); print(max(abs(theta - p_to_theta(theta_to_p(theta)))))
+    ## print(max(abs(1 - theta_to_p(p_to_theta(1)))))
     ## p_to_theta(theta_to_p(numeric(0)))
     
-    ## build (nW x ngrid) matrix of conditional densities
-    grid      <- seq(from=xmin, to=xmax, length=ngrid)
-    grid.csem <- csem(grid)
+    ## build (nW x gridspec$numpoints) matrix of conditional densities
+    grid.csem <- csem(gridspec$grid)
 
-    if(length(grid.csem) != length(grid)){
+    if(length(grid.csem) != gridspec$numpoints){
         stop("csem() is not returning a vector of appropriate length")
     }
 
@@ -83,7 +129,9 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
     }
     
     ## if(!discrete){
-    fwx <- dnorm( matrix(W,ncol=ngrid,nrow=nW), mean=matrix(grid,ncol=ngrid,nrow=nW,byrow=T), sd=matrix(grid.csem,ncol=ngrid,nrow=nW,byrow=T))
+    fwx <- dnorm(matrix(W, ncol=gridspec$numpoints, nrow=nW),
+                 mean = matrix(gridspec$grid, ncol=gridspec$numpoints, nrow=nW, byrow=TRUE),
+                 sd = matrix(grid.csem, ncol=gridspec$numpoints, nrow=nW, byrow=TRUE))
     ##  } else { ## uses pxgu - fwx[i,j] = p(W=W[i] | X = grid[j])
     ## tmp <- lapply(grid, function(u){ pxgu(u, csem(u), .W)})
     ## stopifnot(all(sapply(tmp, function(x){ all(x[,1] == .W) })))
@@ -91,7 +139,7 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
     ## }
   
     ## negative log likelihood for a set of probabilities given ".inds" which are
-    ## indices of "grid" and which are continually updated
+    ## indices of gridspec$grid and which are continually updated
     negll <- function(theta){
         -sum(.counts * log(as.vector(fwx[,.inds] %*% theta_to_p(theta))))
     }
@@ -104,11 +152,16 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
     ll <- apply(fwx, 2, function(x){ sum(.counts * log(x)) })
     .inds <- which.max(ll)
     .probs   <- 1
-    .eligible <- setdiff(1:ngrid, .inds)
+    .eligible <- setdiff(1:gridspec$numpoints, .inds)
     ll.current <- ll[.inds]
     
     .history <- list()
-    .history[[1]] <- data.frame(x = grid[.inds], csem = grid.csem[.inds], p = 1, ll = ll.current, ex = grid[.inds], varx = 0)
+    .history[[1]] <- data.frame(x = gridspec$grid[.inds],
+                                csem = grid.csem[.inds],
+                                p = 1,
+                                ll = ll.current,
+                                ex = gridspec$grid[.inds],
+                                varx = 0)
 
     ## now add grid points per the algorithm until there is no improvement
     done <- FALSE  
@@ -147,12 +200,12 @@ deconv_npmle <- function(W, csem, xmin = -5, xmax = +5, ngrid = 2000, lambda = 0
             
             ## summarize the state
             .history[[length(.history)+1]] <-
-                data.frame(x = grid[.inds],
+                data.frame(x = gridspec$grid[.inds],
                            csem = grid.csem[.inds],
                            p = .probs,
                            ll = ll.current,
-                           ex = sum(grid[.inds] * .probs),
-                           varx = sum(grid[.inds]^2 * .probs) - (sum(grid[.inds] * .probs))^2)
+                           ex = sum(gridspec$grid[.inds] * .probs),
+                           varx = sum(gridspec$grid[.inds]^2 * .probs) - (sum(gridspec$grid[.inds] * .probs))^2)
             if(!quietly){
                 print(.history[[length(.history)]])
                 cat("\n\n\n")      

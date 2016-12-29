@@ -11,7 +11,8 @@
   item response theory models.}
 
 \usage{
-deconv_npmle(W, csem, xmin = -5, xmax = +5, ngrid = 2000,
+deconv_npmle(W, csem,
+gridspec = list(xmin=-5, xmax=5, numpoints=2000),
 lambda = 0.0005, lltol = 1e-7, psmall = 0.00005,
 discrete = FALSE, quietly = FALSE)
 }
@@ -29,17 +30,16 @@ discrete = FALSE, quietly = FALSE)
     vector of the same length as the input.
   }
 
-  \item{xmin}{
-    Smallest element of grid over which the NPMLE will be computed.
-  }
-
-  \item{xmax}{
-    Largest element of grid over which the NPMLE will be computed.
-  }
-
-  \item{ngrid}{
-    Number of grid points, ranging from \code{xmin} to \code{xmax}, on
-    the grid over which the NPMLE will be computed.
+  \item{gridspec}{
+    Specifies the grid over which the NPMLE will be computed. It must be
+    either a list (the default) with named elements \code{xmin}
+    providing the minimum grid value, \code{xmax} providing the maximum
+    grid value, and \code{numpoints} providing the desired number of
+    points, or a numeric vector providing the actual desired grid.
+    In the former case, the grid will be \code{numpoints} equally-spaced
+    values ranging from \code{xmin} to \code{xmax}.  In the latter case,
+    the grid must be an arbitrary sequence of increasing numeric values
+    with no missing values.
   }
 
   \item{lambda}{
@@ -81,10 +81,10 @@ discrete = FALSE, quietly = FALSE)
   returns a vector of length \code{n} where each element is a common
   constant.
 
-  The default values of \code{xmin} and \code{xmin} are generally
-  appropriate only for a latent variable on a standardized scale with
-  mean zero and variance one, and should be set to appropriate values
-  given the scale of \code{W}.
+  The default values of \code{xmin} and \code{xmin} in \code{gridspec}
+  are generally appropriate only for a latent variable on a standardized
+  scale with mean zero and variance one, and should be set to
+  appropriate values given the scale of \code{W}.
 }
 
 \value{A list with elements
@@ -175,12 +175,12 @@ plot(tmp$math_lag1, tmp$math_lag1_csem)
 lines(tmp$math_lag1, .csem(tmp$math_lag1), col="blue")
 
 ## get NPMLE distribution of latent lag 1 math achievement
-m <- deconv_npmle(W       = testscores$math_lag1,
-                  csem    = .csem,
-                  xmin    = min(testscores$math_lag1),
-                  xmax    = max(testscores$math_lag1),
-                  ngrid   = 10000,
-                  quietly = TRUE)
+m <- deconv_npmle(W        = testscores$math_lag1,
+                  csem     = .csem,
+                  gridspec = list(xmin = min(testscores$math_lag1),
+                                  xmax = max(testscores$math_lag1),
+                                  numpoints = 10000),
+                  quietly  = TRUE)
 
 print(m$px)
 

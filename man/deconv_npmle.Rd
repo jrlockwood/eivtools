@@ -12,7 +12,7 @@
 
 \usage{
 deconv_npmle(W, csem,
-gridspec = list(xmin=-5, xmax=5, numpoints=2000),
+gridspec = list(fixed=FALSE, xmin=-5, xmax=5, numpoints=2000),
 lambda = 0.0005, lltol = 1e-7, psmall = 0.00005,
 discrete = FALSE, quietly = FALSE)
 }
@@ -31,15 +31,20 @@ discrete = FALSE, quietly = FALSE)
   }
 
   \item{gridspec}{
-    Specifies the grid over which the NPMLE will be computed. It must be
-    either a list (the default) with named elements \code{xmin}
-    providing the minimum grid value, \code{xmax} providing the maximum
-    grid value, and \code{numpoints} providing the desired number of
-    points, or a numeric vector providing the actual desired grid.
-    In the former case, the grid will be \code{numpoints} equally-spaced
-    values ranging from \code{xmin} to \code{xmax}.  In the latter case,
-    the grid must be an arbitrary sequence of increasing numeric values
-    with no missing values.
+    A named list specifying the grid over which the NPMLE will be
+    computed.  It must have a logical component \code{fixed} indicating
+    if the NPMLE grid is fixed (TRUE), or if the final grid is chosen by
+    optimization over a candidate grid (FALSE).  The default is
+    FALSE. The remaining components of \code{gridspec} specify the grid
+    in one of two mutually exclusive ways.  In the first way,
+    \code{gridspec} must contain elements \code{xmin} providing the
+    minimum grid value, \code{xmax} providing the maximum grid value,
+    and \code{numpoints} providing the desired number of points.  In
+    this case, the grid will be \code{numpoints} equally-spaced values
+    ranging from \code{xmin} to \code{xmax}.  In the second way,
+    \code{gridspec} must contain an element \code{grid}, a numeric
+    vector providing the actual desired grid.  It must be an arbitrary
+    sequence of increasing numeric values with no missing values.
   }
 
   \item{lambda}{
@@ -90,8 +95,11 @@ discrete = FALSE, quietly = FALSE)
 \value{A list with elements
 
   \itemize{
-    \item{.history: }{Iteration-by-iteration evolution of estimated
-      distribution}
+    \item{gridspec: }{Information about the initial grid}
+      
+    \item{.history: }{Iteration-by-iteration evolution of the estimated
+      distribution, if \code{gridspec$fixed} is FALSE.  Otherwise it is
+      an empty list}
     
     \item{px: }{A dataframe providing the final NPMLE distribution.  There
       are as many rows as there are mass points in the estimated
@@ -177,7 +185,8 @@ lines(tmp$math_lag1, .csem(tmp$math_lag1), col="blue")
 ## get NPMLE distribution of latent lag 1 math achievement
 m <- deconv_npmle(W        = testscores$math_lag1,
                   csem     = .csem,
-                  gridspec = list(xmin = min(testscores$math_lag1),
+                  gridspec = list(fixed = FALSE,
+                                  xmin = min(testscores$math_lag1),
                                   xmax = max(testscores$math_lag1),
                                   numpoints = 10000),
                   quietly  = TRUE)
@@ -211,6 +220,18 @@ meiv <- eivreg(math ~ math_lag1 + sped + frl + schoolid,
          contrasts = list(schoolid = "contr.sum"))
 
 print(summary(meiv))
+
+## alternative deconvolution with fixed grid
+m <- deconv_npmle(W        = testscores$math_lag1,
+                  csem     = .csem,
+                  gridspec = list(fixed = TRUE,
+                                  xmin = min(testscores$math_lag1),
+                                  xmax = max(testscores$math_lag1),
+                                  numpoints = 40),
+                  quietly  = TRUE)
+
+print(m$px)
+
 }
 
 \keyword{models}

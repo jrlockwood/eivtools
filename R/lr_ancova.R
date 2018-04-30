@@ -6,7 +6,7 @@
 ## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
 ####################################
 
-lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.pdf", seed=12345, modelfileonly=FALSE, scalemat=NULL,...){
+lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.pdf", seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE,...){
 
     set.seed(seed)
     tmpdir <- tempdir()
@@ -477,14 +477,30 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
         scalemat  <- get_bugs_wishart_scalemat(target, nsim=25000, reltol = 0.01, quietly=TRUE)$bugs.scalemat
         jags.data <- c(jags.data, "scalemat")        
     }
-    
+
+    if(blockprior){
+        if(nX > 1){
+            betaYX_zeros  <- rep(0.0, nX)
+            betaYX_prec   <- (1e-10)*diag(nX)
+            jags.data     <- c(jags.data,"betaYX_zeros","betaYX_prec")
+        }
+
+        if(nZ > 1){
+            betaYZ_zeros  <- rep(0.0, nZ)
+            betaYZ_prec   <- (1e-10)*diag(nZ)
+            jags.data     <- c(jags.data,"betaYZ_zeros","betaYZ_prec")
+        }
+    }
+
     ## #############################################
     ## generate initial values (unless they have already been passed)
     ## #############################################
     if(is.null(jags.inits)){
         for(i in 1:jags.n.chains){
             
-            .tmp <- list(betaYG = c(rnorm(nG-1, sd=0.2), NA))
+            .tmp   <- list(betaYG = c(rnorm(nG-1, sd=0.2), NA))
+            .tmp$X <- W
+            .tmp$X[is.na(.tmp$X)] <- 0.0
             
             if(outcome_model %in% c("normal","normalME")){
                 .tmp$sdYgivenXZG    <- runif(1)
@@ -495,28 +511,24 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
                 .tmp$betaYZ         <- rnorm(1, sd=0.2)
                 .tmp$betaYX         <- rnorm(1, sd=0.2)
                 .tmp$betaXG         <- c(rnorm(nG-1, sd=0.2), NA)
-                .tmp$X              <- rnorm(nR, sd=0.2)
                 .tmp$sdXgivenZG     <- runif(1)
             } else if( (nX == 1) && (nZ > 1) ){
                 .tmp$betaXZ         <- rnorm(nZ, sd=0.2)
                 .tmp$betaYZ         <- rnorm(nZ, sd=0.2)
                 .tmp$betaYX         <- rnorm(1,  sd=0.2)
                 .tmp$betaXG         <- c(rnorm(nG-1, sd=0.2), NA)
-                .tmp$X              <- rnorm(nR, sd=0.2)
                 .tmp$sdXgivenZG     <- runif(1)
             } else if( (nX > 1) && (nZ == 1) ){
                 .tmp$betaXZ         <- rnorm(nX, sd=0.2)
                 .tmp$betaYZ         <- rnorm(1,  sd=0.2)
                 .tmp$betaYX         <- rnorm(nX, sd=0.2)
                 .tmp$betaXG         <- rbind(matrix(rnorm(nX*(nG-1), sd=0.2), ncol=nX), rep(NA, nX))
-                .tmp$X              <- matrix(rnorm(nR*nX, sd=0.2), ncol=nX)
                 .tmp$precXgivenZG   <- diag(nX)
             } else {
                 .tmp$betaXZ         <- matrix(rnorm(nX*nZ, sd=0.2), ncol=nX)
                 .tmp$betaYZ         <- rnorm(nZ, sd=0.2)
                 .tmp$betaYX         <- rnorm(nX, sd=0.2)
                 .tmp$betaXG         <- rbind(matrix(rnorm(nX*(nG-1), sd=0.2), ncol=nX), rep(NA, nX))
-                .tmp$X              <- matrix(rnorm(nR*nX, sd=0.2), ncol=nX)
                 .tmp$precXgivenZG   <- diag(nX)            
             }
             
@@ -665,18 +677,37 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
     if( (nX == 1) && (nZ == 1) ){
         cat(paste0("betaXZ ~ dnorm(0.0, 1e-10)\n"), file="model.txt", append=TRUE)
         cat(paste0("betaYZ ~ dnorm(0.0, 1e-10)\n"), file="model.txt", append=TRUE)
-        cat(paste0("betaYX ~ dnorm(0.0, 1e-10)\n\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("betaYX ~ dnorm(0.0, 1e-10)\n"), file="model.txt", append=TRUE)
     } else if( (nX == 1) && (nZ > 1) ){
-        cat(paste0("for(i in 1:",nZ,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-10)\n  betaYZ[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
-        cat(paste0("betaYX ~ dnorm(0.0, 1e-10)\n\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nZ,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
+        if(blockprior){
+            cat(paste0("betaYZ[1:",nZ,"] ~ dmnorm(betaYZ_zeros[1:",nZ,"], betaYZ_prec[1:",nZ,",1:",nZ,"])\n"), file="model.txt", append=TRUE)
+        } else {
+            cat(paste0("for(i in 1:",nZ,"){\n  betaYZ[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
+        }
+        cat(paste0("betaYX ~ dnorm(0.0, 1e-10)\n"), file="model.txt", append=TRUE)
     } else if( (nX > 1) && (nZ == 1) ){
-        cat(paste0("for(i in 1:",nX,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-10)\n  betaYX[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nX,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
         cat(paste0("betaYZ ~ dnorm(0.0, 1e-10)\n\n\n"), file="model.txt", append=TRUE)
+        if(blockprior){
+            cat(paste0("betaYX[1:",nX,"] ~ dmnorm(betaYX_zeros[1:",nX,"], betaYX_prec[1:",nX,",1:",nX,"])\n"), file="model.txt", append=TRUE)
+        } else {
+            cat(paste0("for(i in 1:",nX,"){\n  betaYX[i] ~ dnorm(0.0, 1e-10)\n}\n"), file="model.txt", append=TRUE)
+        }
     } else {
         cat(paste0("for(i in 1:",nZ,"){\n  for(j in 1:",nX,"){\n    betaXZ[i,j] ~ dnorm(0.0, 1e-10)\n  }\n}\n\n"), file="model.txt", append=TRUE)
-        cat(paste0("for(i in 1:",nZ,"){\n  betaYZ[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
-        cat(paste0("for(i in 1:",nX,"){\n  betaYX[i] ~ dnorm(0.0, 1e-10)\n}\n\n"), file="model.txt", append=TRUE)
+        if(blockprior){
+            cat(paste0("betaYZ[1:",nZ,"] ~ dmnorm(betaYZ_zeros[1:",nZ,"], betaYZ_prec[1:",nZ,",1:",nZ,"])\n"), file="model.txt", append=TRUE)
+        } else {
+            cat(paste0("for(i in 1:",nZ,"){\n  betaYZ[i] ~ dnorm(0.0, 1e-10)\n}\n"), file="model.txt", append=TRUE)
+        }
+        if(blockprior){
+            cat(paste0("betaYX[1:",nX,"] ~ dmnorm(betaYX_zeros[1:",nX,"], betaYX_prec[1:",nX,",1:",nX,"])\n"), file="model.txt", append=TRUE)
+        } else {
+            cat(paste0("for(i in 1:",nX,"){\n  betaYX[i] ~ dnorm(0.0, 1e-10)\n}\n"), file="model.txt", append=TRUE)
+        }
     }
+    cat("\n\n", file="model.txt", append=TRUE)
     
     ## priors: sum-to-zero group effects on X and Y
     cat(paste0("for(g in 1:",(nG-1),"){\n  betaYG[g] ~ dnorm(0.0, 1e-10)\n}\nbetaYG[",nG,"] <- -1.0 * sum(betaYG[1:",(nG-1),"])\n\n"), file="model.txt", append=TRUE)

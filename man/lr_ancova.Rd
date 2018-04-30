@@ -8,7 +8,7 @@
 
 \usage{
 lr_ancova(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.pdf",
-seed=12345, modelfileonly=FALSE, scalemat=NULL,...)
+seed=12345, modelfileonly=FALSE, scalemat=NULL,blockprior=TRUE,...)
 }
 
 \arguments{
@@ -33,6 +33,8 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL,...)
 
   \item{scalemat}{TBD}
 
+  \item{blockprior}{TBD}
+  
   \item{...}{TBD}
 }
 

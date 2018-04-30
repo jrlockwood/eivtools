@@ -1,10 +1,11 @@
 Package: eivtools
 Type: Package
 Title: Measurement Error Modeling Tools
-Version: 0.1.0
-Date: 2016-12-13
+Version: 0.1.1
+Date: 2018-04-29
+Depends: R (>= 3.4.0), stats, grDevices, graphics, utils, R2jags
 Author: J.R. Lockwood
 Maintainer: J.R. Lockwood <jrlockwood@ets.org>
-Description: Currently provides function and related methods for errors-in-variables linear regression with robust standard errors provided for either known reliabilities or known measurement error covariance matrix. Additional functions for various models forthcoming.
+Description: This includes functions for analysis with error-prone covariates, including deconvolution, latent regression and errors-in-variables regression.
 License: GPL (>= 2) | file LICENSE
 LazyData: true

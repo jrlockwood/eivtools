@@ -147,7 +147,7 @@ discrete = FALSE, quietly = FALSE)
 }
 
 \references{
-  Lockwood J.R and McCaffrey D.F. (2014). \dQuote{Correcting for test
+  Lockwood J.R. and McCaffrey D.F. (2014). \dQuote{Correcting for test
     score measurement error in ANCOVA models for estimating treatment
     effects,} \emph{Journal of Educational and Behavioral Statistics}
   39(1):22-52.

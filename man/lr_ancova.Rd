@@ -40,6 +40,7 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL,blockprior=TRUE,...)
 
 \details{
   TBD
+  Note that this function requires JAGS to be installed on your system.
 }
 
 \value{
@@ -51,10 +52,15 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL,blockprior=TRUE,...)
   measurement error in generalized linear models with Rasch measures
   as covariates,} \emph{Psychometrika} 76(1):40-56.
     
-  Lockwood J.R and McCaffrey D.F. (2014). \dQuote{Correcting for test
+  Lockwood J.R. and McCaffrey D.F. (2014). \dQuote{Correcting for test
     score measurement error in ANCOVA models for estimating treatment
     effects,} \emph{Journal of Educational and Behavioral Statistics}
   39(1):22-52.
+
+  Plummer, M. (2003). \dQuote{JAGS: A program for analysis of Bayesian
+  graphical models using Gibbs sampling.} Proceedings of the 3rd
+  International Workshop on Distributed Statistical Computing (DSC
+  2003), Vienna, Austria.
 }
 
 \author{

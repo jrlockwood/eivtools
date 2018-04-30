@@ -415,7 +415,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
                     .vtab[,paste0("x",.j)] <- .vtab$x^.j
                 }
                 .vtab$loggx <- log(.vtab$gx)
-                varfuncs[[i]]$logmod <- lm(as.formula(paste0("loggx ~ ",paste0("x",1:varfuncs[[i]]$degree))), data=.vtab)
+                varfuncs[[i]]$logmod <- lm(as.formula(paste0("loggx ~ ",paste(paste0("x",1:varfuncs[[i]]$degree), collapse=" + "))), data=.vtab)
                 
                 ## plot to check reasonableness
                 .r <- range(varfuncs[[i]]$vtab$x)

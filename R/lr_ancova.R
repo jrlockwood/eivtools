@@ -460,6 +460,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
         ##    precison matrix
         ##
         ## scalemat  <- (nX + 1) * cov(sapply(1:nX, function(j){ resid(lm(W.obs[,j] ~ dmat.obs - 1))}))
+        ##
         ## NOTE: this seemed to create scale matrices that led to a more informative
         ##       prior than probably desirable, in part because the scale matrices are
         ##       not diagonal.  switch to diagonal scale matrix where the implied median
@@ -474,7 +475,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
         W.obs     <- W[allobs,]
         dmat.obs  <- dmat[allobs,]
         target    <- sapply(1:nX, function(j){ var(resid(lm(W.obs[,j] ~ dmat.obs - 1))) })
-        scalemat  <- get_bugs_wishart_scalemat(target, nsim=25000, reltol = 0.01, quietly=TRUE)$bugs.scalemat
+        scalemat  <- get_bugs_wishart_scalemat(target, nsim=50000, reltol = 0.01, quietly=TRUE)$bugs.scalemat
         jags.data <- c(jags.data, "scalemat")        
     }
 
@@ -494,12 +495,36 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
 
     ## #############################################
     ## generate initial values (unless they have already been passed)
+    ##
+    ## NOTES: convergence was fussy unless we tamed the starting values a bit.
+    ## so start the regression coeffs involving Y at zero.
+    ## start the other regression coefs at values based on the data, plus noise.
+    ## start X at W.
     ## #############################################
     if(is.null(jags.inits)){
+
+        ## regress W on (Z,G) to proxy for regression of X on (Z,G)
+        dmat   <- cbind(Z, model.matrix(~G, contrasts.arg=list(G = "contr.sum"))[,-1])
+        if(nX == 1){
+            parts <- rep(0.0, ncol(dmat))
+            if(sum(!is.na(W)) > ncol(dmat)){
+                parts <- as.vector(coef(lm(W ~ dmat - 1, na.action=na.omit)))
+            }
+        } else {
+            parts <- matrix(0.0, ncol=nX, nrow = ncol(dmat))
+            for(j in 1:nX){
+                if(sum(!is.na(W[,j])) > ncol(dmat)){
+                    parts[,j] <- as.vector(coef(lm(W[,j] ~ dmat - 1, na.action=na.omit)))
+                }
+            }
+        }
+                
+        ## set lists of initial values
         for(i in 1:jags.n.chains){
-            
-            .tmp   <- list(betaYG = c(rnorm(nG-1, sd=0.2), NA))
-            .tmp$X <- W
+
+            .tmp                  <- list()
+            .tmp$betaYG           <- c(rep(0.0, nG-1), NA)
+            .tmp$X                <- W
             .tmp$X[is.na(.tmp$X)] <- 0.0
             
             if(outcome_model %in% c("normal","normalME")){
@@ -507,28 +532,28 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
             }
             
             if( (nX == 1) && (nZ == 1) ){
-                .tmp$betaXZ         <- rnorm(1, sd=0.2)
-                .tmp$betaYZ         <- rnorm(1, sd=0.2)
-                .tmp$betaYX         <- rnorm(1, sd=0.2)
-                .tmp$betaXG         <- c(rnorm(nG-1, sd=0.2), NA)
+                .tmp$betaYZ         <- 0.0
+                .tmp$betaYX         <- 0.0
+                .tmp$betaXZ         <- parts[1] + rnorm(1, sd=0.05)
+                .tmp$betaXG         <- c(parts[-1] + rnorm(nG-1, sd=0.05), NA)
                 .tmp$sdXgivenZG     <- runif(1)
             } else if( (nX == 1) && (nZ > 1) ){
-                .tmp$betaXZ         <- rnorm(nZ, sd=0.2)
-                .tmp$betaYZ         <- rnorm(nZ, sd=0.2)
-                .tmp$betaYX         <- rnorm(1,  sd=0.2)
-                .tmp$betaXG         <- c(rnorm(nG-1, sd=0.2), NA)
+                .tmp$betaYZ         <- rep(0.0, nZ)
+                .tmp$betaYX         <- 0.0
+                .tmp$betaXZ         <- parts[1:nZ] + rnorm(nZ, sd=0.05)
+                .tmp$betaXG         <- c(parts[-(1:nZ)] + rnorm(nG-1, sd=0.05), NA)
                 .tmp$sdXgivenZG     <- runif(1)
             } else if( (nX > 1) && (nZ == 1) ){
-                .tmp$betaXZ         <- rnorm(nX, sd=0.2)
-                .tmp$betaYZ         <- rnorm(1,  sd=0.2)
-                .tmp$betaYX         <- rnorm(nX, sd=0.2)
-                .tmp$betaXG         <- rbind(matrix(rnorm(nX*(nG-1), sd=0.2), ncol=nX), rep(NA, nX))
+                .tmp$betaYZ         <- 0.0
+                .tmp$betaYX         <- rep(0.0, nX)
+                .tmp$betaXZ         <- parts[1,1:nX] + rnorm(nX, sd=0.05)
+                .tmp$betaXG         <- rbind(parts[-1,1:nX] + matrix(rnorm(nX*(nG-1), sd=0.05), ncol=nX), rep(NA, nX))
                 .tmp$precXgivenZG   <- diag(nX)
             } else {
-                .tmp$betaXZ         <- matrix(rnorm(nX*nZ, sd=0.2), ncol=nX)
-                .tmp$betaYZ         <- rnorm(nZ, sd=0.2)
-                .tmp$betaYX         <- rnorm(nX, sd=0.2)
-                .tmp$betaXG         <- rbind(matrix(rnorm(nX*(nG-1), sd=0.2), ncol=nX), rep(NA, nX))
+                .tmp$betaYZ         <- rep(0.0, nZ)
+                .tmp$betaYX         <- rep(0.0, nX)
+                .tmp$betaXZ         <- parts[1:nZ,1:nX] + matrix(rnorm(nX*nZ, sd=0.05), ncol=nX)
+                .tmp$betaXG         <- rbind(parts[-(1:nZ),1:nX] + matrix(rnorm(nX*(nG-1), sd=0.05), ncol=nX), rep(NA, nX))
                 .tmp$precXgivenZG   <- diag(nX)            
             }
             

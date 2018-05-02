@@ -8,7 +8,7 @@
 
 \usage{
 lr_ancova(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.pdf",
-seed=12345, modelfileonly=FALSE, scalemat=NULL,blockprior=TRUE,...)
+seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
 }
 
 \arguments{

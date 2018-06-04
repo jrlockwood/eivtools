@@ -17,7 +17,7 @@
   %% \packageIndices{eivtools}
   %% ~~ An overview of how to use the package, including the most important ~~
   %% ~~ functions ~~
-  Forthcoming.
+  TODO.
 }
 
 \author{
@@ -39,9 +39,9 @@
     effects,} \emph{Journal of Educational and Behavioral Statistics}
   39(1):22-52.
 
-  Lockwood J.R. and McCaffrey D.F. (forthcoming).
+  Lockwood J.R. and McCaffrey D.F. (2017).
   \dQuote{Simulation-extrapolation with latent heteroskedastic
-    variance,} \emph{Psychometrika}.
+    variance,} \emph{Psychometrika} 82(2):717-736.
   
   Rabe-Hesketh S., Pickles A. and Skrondal A. (2003). \dQuote{Correcting
   for covariate measurement error in logistic regression using

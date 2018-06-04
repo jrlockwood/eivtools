@@ -1,9 +1,12 @@
 ###################################
+## TODO: fix working directory issue - shouldn't be setting that in this function (see fh_hetop for how to deal with it; need to decide here how to deal with plotfile)
+##
+## ## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
+##
 ## FLAG FUTURE WORK:
 ##
 ## clustering within groups - need to deal with clusters for X model and Y model
 ##
-## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
 ##
 ####################################
 

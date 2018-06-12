@@ -205,7 +205,7 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
     {M}-estimation,} \emph{The American Statistician} 56(1):29-38.
 
   Wooldridge J. (2002). \emph{Econometric Analysis of Cross Section and
-  Panel Data}. Cambridge, MA: MIT Press.
+    Panel Data}. Cambridge, MA: MIT Press.
 }
 
 \author{

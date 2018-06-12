@@ -1,20 +1,19 @@
 ###################################
-## TODO: fix working directory issue - shouldn't be setting that in this function (see fh_hetop for how to deal with it; need to decide here how to deal with plotfile)
-##
-## ## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
-##
 ## FLAG FUTURE WORK:
+##
+## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
 ##
 ## clustering within groups - need to deal with clusters for X model and Y model
 ##
-##
 ####################################
-
-lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.pdf", seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE,...){
+lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE,...){
 
     set.seed(seed)
     tmpdir <- tempdir()
-    setwd(tmpdir)
+    modfile <- paste0(tmpdir,"/model.txt")
+    if(is.null(plotfile)){
+        plotfile <- paste0(tmpdir, "/lr_ancova_plots.pdf")
+    }
     pdf(plotfile)
 
     ## #############################################
@@ -570,29 +569,29 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
     ## #############################################
     ## create model file
     ## #############################################
-    cat(paste0("model\n{\n\nfor(i in 1:",nR,"){\n\n"), file="model.txt")
+    cat(paste0("model\n{\n\nfor(i in 1:",nR,"){\n\n"), file=modfile)
     
     ## "true covariate" model
     if(nX == 1){
-        cat("EXgivenZG[i] <- ", file="model.txt", append=TRUE)
+        cat("EXgivenZG[i] <- ", file=modfile, append=TRUE)
         
         if(nZ == 1){
-            cat("(betaXZ * Z[i]) + betaXG[gid[i]]\n", file="model.txt", append=TRUE)
+            cat("(betaXZ * Z[i]) + betaXG[gid[i]]\n", file=modfile, append=TRUE)
         } else{
-            cat(paste0("inprod(betaXZ[1:",nZ,"], Z[i,1:",nZ,"]) + betaXG[gid[i]]\n"), file="model.txt", append=TRUE)
+            cat(paste0("inprod(betaXZ[1:",nZ,"], Z[i,1:",nZ,"]) + betaXG[gid[i]]\n"), file=modfile, append=TRUE)
         }
-        cat("X[i] ~ dnorm(EXgivenZG[i], precXgivenZG)\n\n\n\n", file="model.txt", append=TRUE)
+        cat("X[i] ~ dnorm(EXgivenZG[i], precXgivenZG)\n\n\n\n", file=modfile, append=TRUE)
     } else {
         for(j in 1:nX){
-            cat(paste0("EXgivenZG[i,",j,"] <- "), file="model.txt", append=TRUE)
+            cat(paste0("EXgivenZG[i,",j,"] <- "), file=modfile, append=TRUE)
             
             if(nZ == 1){
-                cat(paste0("(betaXZ[",j,"] * Z[i]) + betaXG[gid[i],",j,"]\n"), file="model.txt", append=TRUE)
+                cat(paste0("(betaXZ[",j,"] * Z[i]) + betaXG[gid[i],",j,"]\n"), file=modfile, append=TRUE)
             } else {
-                cat(paste0("inprod(betaXZ[1:",nZ,",",j,"], Z[i,1:",nZ,"]) + betaXG[gid[i],",j,"]\n"), file="model.txt", append=TRUE)
+                cat(paste0("inprod(betaXZ[1:",nZ,",",j,"], Z[i,1:",nZ,"]) + betaXG[gid[i],",j,"]\n"), file=modfile, append=TRUE)
             }
         }
-        cat(paste0("X[i,1:",nX,"] ~ dmnorm(EXgivenZG[i,1:",nX,"], precXgivenZG[1:",nX,",1:",nX,"])\n\n\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("X[i,1:",nX,"] ~ dmnorm(EXgivenZG[i,1:",nX,"], precXgivenZG[1:",nX,",1:",nX,"])\n\n\n\n"), file=modfile, append=TRUE)
     }
     
     ## "measurement model"
@@ -600,18 +599,18 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
         vf <- varfuncs[[1]]
         
         if(vf$type == "constant"){
-            cat(paste0("W[i] ~ dnorm(X[i], ", (1.0 / vf$vtab),")\n\n\n"), file="model.txt", append=TRUE)
+            cat(paste0("W[i] ~ dnorm(X[i], ", (1.0 / vf$vtab),")\n\n\n"), file=modfile, append=TRUE)
         }
         
         if(vf$type == "piecewise_linear"){
             .K <- nrow(vf$vtab)
-            cat(paste0("precWgivenX[i] <- 1.0 / ( "), file="model.txt", append=TRUE)
-            cat(paste0("(ifelse(X[i] <= ",vf$vtabi$xL[2],",",vf$vtabi$a[2],",0.0)) + "), file="model.txt", append=TRUE)
+            cat(paste0("precWgivenX[i] <- 1.0 / ( "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse(X[i] <= ",vf$vtabi$xL[2],",",vf$vtabi$a[2],",0.0)) + "), file=modfile, append=TRUE)
             for(k in 2:.K){
-                cat(paste0("(ifelse( (X[i] > ",vf$vtabi$xL[k],") && (X[i] <= ",vf$vtabi$xU[k],"), ",vf$vtabi$a[k]," + (",vf$vtabi$b[k],")*(X[i] - (",vf$vtabi$xL[k],")),0.0)) + "), file="model.txt", append=TRUE)
+                cat(paste0("(ifelse( (X[i] > ",vf$vtabi$xL[k],") && (X[i] <= ",vf$vtabi$xU[k],"), ",vf$vtabi$a[k]," + (",vf$vtabi$b[k],")*(X[i] - (",vf$vtabi$xL[k],")),0.0)) + "), file=modfile, append=TRUE)
             }
-            cat(paste0("(ifelse(X[i] > ",vf$vtabi$xU[.K],",",vf$vtabi$a[.K+1],",0.0)) )\n"), file="model.txt", append=TRUE)
-            cat("W[i] ~ dnorm(X[i], precWgivenX[i])\n\n\n", file="model.txt", append=TRUE)
+            cat(paste0("(ifelse(X[i] > ",vf$vtabi$xU[.K],",",vf$vtabi$a[.K+1],",0.0)) )\n"), file=modfile, append=TRUE)
+            cat("W[i] ~ dnorm(X[i], precWgivenX[i])\n\n\n", file=modfile, append=TRUE)
         }
         
         if(vf$type == "log_polynomial"){
@@ -623,29 +622,29 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
             tmp[1]  <- gsub("*","",tmp[1],fixed=TRUE)
             pstring <- paste0("exp( ",paste(tmp, collapse=" + ")," )")
             
-            cat(paste0("precWgivenX[i] <- 1.0 / ( "), file="model.txt", append=TRUE)        
-            cat(paste0("(ifelse(X[i] <= ",vf$vtab$x[1], ",",vf$vtab$gx[1], ",0.0)) + "), file="model.txt", append=TRUE)
-            cat(paste0("(ifelse(X[i] > " ,vf$vtab$x[.K],",",vf$vtab$gx[.K],",0.0)) + "), file="model.txt", append=TRUE)
-            cat(paste0("(ifelse( (X[i] > ",vf$vtab$x[1],") && (X[i] <= ",vf$vtab$x[.K],"), ",pstring,", 0.0)) )\n"), file="model.txt", append=TRUE)
-            cat("W[i] ~ dnorm(X[i], precWgivenX[i])\n\n\n", file="model.txt", append=TRUE)
+            cat(paste0("precWgivenX[i] <- 1.0 / ( "), file=modfile, append=TRUE)        
+            cat(paste0("(ifelse(X[i] <= ",vf$vtab$x[1], ",",vf$vtab$gx[1], ",0.0)) + "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse(X[i] > " ,vf$vtab$x[.K],",",vf$vtab$gx[.K],",0.0)) + "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse( (X[i] > ",vf$vtab$x[1],") && (X[i] <= ",vf$vtab$x[.K],"), ",pstring,", 0.0)) )\n"), file=modfile, append=TRUE)
+            cat("W[i] ~ dnorm(X[i], precWgivenX[i])\n\n\n", file=modfile, append=TRUE)
         }
     } else {
         for(j in 1:nX){
             vf <- varfuncs[[j]]
             
             if(vf$type == "constant"){
-                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], ", (1.0 / vf$vtab),")\n\n\n"), file="model.txt", append=TRUE)
+                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], ", (1.0 / vf$vtab),")\n\n\n"), file=modfile, append=TRUE)
             }
             
             if(vf$type == "piecewise_linear"){
                 .K <- nrow(vf$vtab)
-                cat(paste0("precWgivenX[i,",j,"] <- 1.0 / ( "), file="model.txt", append=TRUE)
-                cat(paste0("(ifelse(X[i,",j,"] <= ",vf$vtabi$xL[2],",",vf$vtabi$a[2],",0.0)) + "), file="model.txt", append=TRUE)
+                cat(paste0("precWgivenX[i,",j,"] <- 1.0 / ( "), file=modfile, append=TRUE)
+                cat(paste0("(ifelse(X[i,",j,"] <= ",vf$vtabi$xL[2],",",vf$vtabi$a[2],",0.0)) + "), file=modfile, append=TRUE)
                 for(k in 2:.K){
-                    cat(paste0("(ifelse( (X[i,",j,"] > ",vf$vtabi$xL[k],") && (X[i,",j,"] <= ",vf$vtabi$xU[k],"), ",vf$vtabi$a[k]," + (",vf$vtabi$b[k],")*(X[i,",j,"] - (",vf$vtabi$xL[k],")),0.0)) + "), file="model.txt", append=TRUE)
+                    cat(paste0("(ifelse( (X[i,",j,"] > ",vf$vtabi$xL[k],") && (X[i,",j,"] <= ",vf$vtabi$xU[k],"), ",vf$vtabi$a[k]," + (",vf$vtabi$b[k],")*(X[i,",j,"] - (",vf$vtabi$xL[k],")),0.0)) + "), file=modfile, append=TRUE)
                 }
-                cat(paste0("(ifelse(X[i,",j,"] > ",vf$vtabi$xU[.K],",",vf$vtabi$a[.K+1],",0.0)) )\n"), file="model.txt", append=TRUE)
-                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], precWgivenX[i,",j,"])\n\n\n"), file="model.txt", append=TRUE)
+                cat(paste0("(ifelse(X[i,",j,"] > ",vf$vtabi$xU[.K],",",vf$vtabi$a[.K+1],",0.0)) )\n"), file=modfile, append=TRUE)
+                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], precWgivenX[i,",j,"])\n\n\n"), file=modfile, append=TRUE)
             }
             
             if(vf$type == "log_polynomial"){
@@ -657,86 +656,84 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
                 tmp[1]  <- gsub("*","",tmp[1],fixed=TRUE)
                 pstring <- paste0("exp( ",paste(tmp, collapse=" + ")," )")
                 
-                cat(paste0("precWgivenX[i,",j,"] <- 1.0 / ( "), file="model.txt", append=TRUE)
-                cat(paste0("(ifelse(X[i,",j,"] <= ",vf$vtab$x[1], ",",vf$vtab$gx[1], ",0.0)) + "), file="model.txt", append=TRUE)
-                cat(paste0("(ifelse(X[i,",j,"] > " ,vf$vtab$x[.K],",",vf$vtab$gx[.K],",0.0)) + "), file="model.txt", append=TRUE)
-                cat(paste0("(ifelse( (X[i,",j,"] > ",vf$vtab$x[1],") && (X[i,",j,"] <= ",vf$vtab$x[.K],"), ",pstring,", 0.0)) )\n"), file="model.txt", append=TRUE)
-                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], precWgivenX[i,",j,"])\n\n\n"), file="model.txt", append=TRUE)
+                cat(paste0("precWgivenX[i,",j,"] <- 1.0 / ( "), file=modfile, append=TRUE)
+                cat(paste0("(ifelse(X[i,",j,"] <= ",vf$vtab$x[1], ",",vf$vtab$gx[1], ",0.0)) + "), file=modfile, append=TRUE)
+                cat(paste0("(ifelse(X[i,",j,"] > " ,vf$vtab$x[.K],",",vf$vtab$gx[.K],",0.0)) + "), file=modfile, append=TRUE)
+                cat(paste0("(ifelse( (X[i,",j,"] > ",vf$vtab$x[1],") && (X[i,",j,"] <= ",vf$vtab$x[.K],"), ",pstring,", 0.0)) )\n"), file=modfile, append=TRUE)
+                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], precWgivenX[i,",j,"])\n\n\n"), file=modfile, append=TRUE)
             }
         }
     }
     
     ## "outcome model"
     if( (nX == 1) && (nZ == 1) ){
-        cat(paste0("eta[i] <- (betaYXZ[1] * X[i]) + (betaYXZ[2] * Z[i])  + betaYG[gid[i]]\n"), file="model.txt", append=TRUE)
+        cat(paste0("eta[i] <- (betaYXZ[1] * X[i]) + (betaYXZ[2] * Z[i])  + betaYG[gid[i]]\n"), file=modfile, append=TRUE)
     } else if( (nX == 1) && (nZ > 1) ){
-        cat(paste0("eta[i] <- (betaYXZ[1] * X[i]) + inprod(betaYXZ[2:",nXZ,"],Z[i,1:",nZ,"]) + betaYG[gid[i]]\n"), file="model.txt", append=TRUE)
+        cat(paste0("eta[i] <- (betaYXZ[1] * X[i]) + inprod(betaYXZ[2:",nXZ,"],Z[i,1:",nZ,"]) + betaYG[gid[i]]\n"), file=modfile, append=TRUE)
     } else if( (nX > 1) && (nZ == 1) ){
-        cat(paste0("eta[i] <- inprod(betaYXZ[1:",nX,"],X[i,1:",nX,"]) + (betaYXZ[",nXZ,"] * Z[i]) + betaYG[gid[i]]\n"), file="model.txt", append=TRUE)
+        cat(paste0("eta[i] <- inprod(betaYXZ[1:",nX,"],X[i,1:",nX,"]) + (betaYXZ[",nXZ,"] * Z[i]) + betaYG[gid[i]]\n"), file=modfile, append=TRUE)
     } else {
-        cat(paste0("eta[i] <- inprod(betaYXZ[1:",nX,"],X[i,1:",nX,"]) + inprod(betaYXZ[",(nX+1),":",nXZ,"],Z[i,1:",nZ,"]) +  betaYG[gid[i]]\n"), file="model.txt", append=TRUE)
+        cat(paste0("eta[i] <- inprod(betaYXZ[1:",nX,"],X[i,1:",nX,"]) + inprod(betaYXZ[",(nX+1),":",nXZ,"],Z[i,1:",nZ,"]) +  betaYG[gid[i]]\n"), file=modfile, append=TRUE)
     }
     
     if(outcome_model == "normal"){
-        cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file="model.txt", append=TRUE)
+        cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "normalME"){
-        cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file="model.txt", append=TRUE)
+        cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "poisson"){
-        cat("Y[i] ~ dpois(exp(eta[i]))\n}\n\n", file="model.txt", append=TRUE)
+        cat("Y[i] ~ dpois(exp(eta[i]))\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "bernoulli_probit"){
-        cat("Y[i] ~ dbern(phi(eta[i]))\n}\n\n", file="model.txt", append=TRUE)
+        cat("Y[i] ~ dbern(phi(eta[i]))\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "bernoulli_logit"){
-        cat("Y[i] ~ dbern(1.0 / (1.0 + exp(-1.0 * eta[i])))\n}\n\n", file="model.txt", append=TRUE)
+        cat("Y[i] ~ dbern(1.0 / (1.0 + exp(-1.0 * eta[i])))\n}\n\n", file=modfile, append=TRUE)
     }
     
     ## priors: regression coefficients
     if( (nX == 1) && (nZ == 1) ){
-        cat(paste0("betaXZ ~ dnorm(0.0, 1e-8)\n"), file="model.txt", append=TRUE)
+        cat(paste0("betaXZ ~ dnorm(0.0, 1e-8)\n"), file=modfile, append=TRUE)
     } else if( (nX == 1) && (nZ > 1) ){
-        cat(paste0("for(i in 1:",nZ,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nZ,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file=modfile, append=TRUE)
     } else if( (nX > 1) && (nZ == 1) ){
-        cat(paste0("for(i in 1:",nX,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nX,"){\n  betaXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file=modfile, append=TRUE)
     } else {
-        cat(paste0("for(i in 1:",nZ,"){\n  for(j in 1:",nX,"){\n    betaXZ[i,j] ~ dnorm(0.0, 1e-8)\n  }\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nZ,"){\n  for(j in 1:",nX,"){\n    betaXZ[i,j] ~ dnorm(0.0, 1e-8)\n  }\n}\n\n"), file=modfile, append=TRUE)
     }
     if(blockprior){
-        cat(paste0("betaYXZ[1:",nXZ,"] ~ dmnorm(betaYXZ_zeros[1:",nXZ,"], betaYXZ_prec[1:",nXZ,",1:",nXZ,"])\n"), file="model.txt", append=TRUE)
+        cat(paste0("betaYXZ[1:",nXZ,"] ~ dmnorm(betaYXZ_zeros[1:",nXZ,"], betaYXZ_prec[1:",nXZ,",1:",nXZ,"])\n"), file=modfile, append=TRUE)
     } else { 
-        cat(paste0("for(i in 1:",nXZ,"){\n  betaYXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(i in 1:",nXZ,"){\n  betaYXZ[i] ~ dnorm(0.0, 1e-8)\n}\n\n"), file=modfile, append=TRUE)
     }
-    cat("\n\n", file="model.txt", append=TRUE)
+    cat("\n\n", file=modfile, append=TRUE)
     
     ## priors: sum-to-zero group effects on X and Y
-    cat(paste0("for(g in 1:",(nG-1),"){\n  betaYG[g] ~ dnorm(0.0, 1e-8)\n}\nbetaYG[",nG,"] <- -1.0 * sum(betaYG[1:",(nG-1),"])\n\n"), file="model.txt", append=TRUE)
+    cat(paste0("for(g in 1:",(nG-1),"){\n  betaYG[g] ~ dnorm(0.0, 1e-8)\n}\nbetaYG[",nG,"] <- -1.0 * sum(betaYG[1:",(nG-1),"])\n\n"), file=modfile, append=TRUE)
     
     if(nX == 1){
-        cat(paste0("for(g in 1:",(nG-1),"){\n  betaXG[g] ~ dnorm(0.0, 1e-8)\n}\nbetaXG[",nG,"] <- -1.0 * sum(betaXG[1:",(nG-1),"])\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(g in 1:",(nG-1),"){\n  betaXG[g] ~ dnorm(0.0, 1e-8)\n}\nbetaXG[",nG,"] <- -1.0 * sum(betaXG[1:",(nG-1),"])\n\n"), file=modfile, append=TRUE)
     } else {
-        cat(paste0("for(j in 1:",nX,"){\n  for(g in 1:",(nG-1),"){\n    betaXG[g,j] ~ dnorm(0.0, 1e-8)\n  }\n  betaXG[",nG,",j] <- -1.0 * sum(betaXG[1:",(nG-1),",j])\n}\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("for(j in 1:",nX,"){\n  for(g in 1:",(nG-1),"){\n    betaXG[g,j] ~ dnorm(0.0, 1e-8)\n  }\n  betaXG[",nG,",j] <- -1.0 * sum(betaXG[1:",(nG-1),",j])\n}\n\n"), file=modfile, append=TRUE)
     }
     
     ## priors: variance components
     if(nX == 1){
-        cat(paste0("sdXgivenZG ~ dunif(0,",max(10, 2*.sdXgivenZG),")\nvarXgivenZG <- sdXgivenZG^2\nprecXgivenZG <- 1.0/varXgivenZG\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("sdXgivenZG ~ dunif(0,",max(10, 2*.sdXgivenZG),")\nvarXgivenZG <- sdXgivenZG^2\nprecXgivenZG <- 1.0/varXgivenZG\n\n"), file=modfile, append=TRUE)
     } else {
-        cat(paste0("precXgivenZG[1:",nX,",1:",nX,"] ~ dwish(scalemat[1:",nX,",1:",nX,"], ",nX+1,")\n"), file="model.txt", append=TRUE)
-        cat(paste0("varXgivenZG[1:",nX,",1:",nX,"] <- inverse(precXgivenZG[,])\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("precXgivenZG[1:",nX,",1:",nX,"] ~ dwish(scalemat[1:",nX,",1:",nX,"], ",nX+1,")\n"), file=modfile, append=TRUE)
+        cat(paste0("varXgivenZG[1:",nX,",1:",nX,"] <- inverse(precXgivenZG[,])\n\n"), file=modfile, append=TRUE)
     }
     
     if(outcome_model %in% c("normal","normalME")){
-        cat(paste0("sdYgivenXZG ~ dunif(0,",max(10, 2*.sdYgivenXZG),")\nvarYgivenXZG <- sdYgivenXZG^2\nprecYgivenXZG <- 1.0/varYgivenXZG\n\n"), file="model.txt", append=TRUE)
+        cat(paste0("sdYgivenXZG ~ dunif(0,",max(10, 2*.sdYgivenXZG),")\nvarYgivenXZG <- sdYgivenXZG^2\nprecYgivenXZG <- 1.0/varYgivenXZG\n\n"), file=modfile, append=TRUE)
     }
     
-    cat("}\n", file="model.txt", append=TRUE)
-    
-    model.location <- paste0(tmpdir,"/model.txt")
-    
+    cat("}\n", file=modfile, append=TRUE)
+        
     ## ###########################################
     ## if desired, stop here and just return model file
     ## ###########################################
     if(modelfileonly){
         cat("model file location returned\n")
-        return(model.location)
+        return(modfile)
     }
     
     ## ###########################################
@@ -744,7 +741,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
     ## ###########################################
     flush.console()
     print(system.time(r <- jags(
-                          model.file         = "model.txt",
+                          model.file         = modfile,
                           data               = jags.data,
                           inits              = jags.inits,
                           parameters.to.save = jags.parameters.to.save,
@@ -760,7 +757,8 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile="lr_ancova.p
                           RNGname            = jags.RNGname,
                           jags.module        = jags.jags.module)))
 
-    r$lr_ancova_extras <- list(model.location = model.location,
+    r$lr_ancova_extras <- list(model.location = modfile,
+                               plot.location  = plotfile,
                                group.map      = group.map,
                                scalemat       = scalemat)
     return(r)

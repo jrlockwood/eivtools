@@ -151,6 +151,10 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     ## #############################################
     ## checks on Y and outcome model
     ## #############################################
+    if(outcome_model == "normalME"){
+        stop("normalME not yet implemented")
+    }
+    
     if(!(outcome_model %in% c("normal","normalME","poisson","bernoulli_probit","bernoulli_logit"))){
         stop("Invalid value of 'outcome_model' - see documentation")
     }
@@ -217,11 +221,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     if(nX == 1){
         .sdXgivenZG <- sd(W, na.rm=T)
     }
-
-    if( (nX == 1) && !is.null(scalemat)){
-        stop("scalemat applies only with multiple error-prone covariates")
-    }
-    
+        
     ## ##############################################
     ## checks on Z
     ## ##############################################
@@ -440,6 +440,37 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     } ## end loop over variance functions
     dev.off()
 
+    ## #############################################
+    ## checks on scalemat
+    ## #############################################
+    if(!is.null(scalemat)){
+
+        if(nX == 1){
+            stop("scalemat applies only with multiple error-prone covariates")
+        }
+
+        if(any(is.na(scalemat))){
+            stop("scalemat cannot contain missing values")
+        }
+        
+        if(!is.matrix(scalemat)){
+            stop("scalemat must be a positive-definite symmetric matrix of dimension ncol(W)")
+        }
+
+        if(!( (nrow(scalemat) == nX) && (nrow(scalemat) == nX) )){
+            stop("scalemat must be a positive-definite symmetric matrix of dimension ncol(W)")
+        }
+
+        if(any(abs(scalemat - t(scalemat)) > 1e-10)){
+            stop("scalemat must be a positive-definite symmetric matrix of dimension ncol(W)")
+        }
+
+        if(any(eigen(scalemat)$values <= 0.0)){
+            stop("scalemat must be a positive-definite symmetric matrix of dimension ncol(W)")
+        }
+
+    }
+            
     ## #############################################
     ## create list of variables names to pass to JAGS
     ## #############################################

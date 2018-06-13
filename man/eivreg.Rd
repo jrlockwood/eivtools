@@ -1,13 +1,13 @@
 \name{eivreg}
 \alias{eivreg}
 
-\title{Errors-in-variables (EIV) linear regression.}
+\title{Errors-in-variables (EIV) linear regression}
 
 \description{
-  \code{eivreg} fits errors-in-variables (EIV) linear regression given
-  specified reliabilities, or a specified variance/covariance matrix
-  for the measurement errors. For either case, it computes robust
-  standard errors that allow for weighting and/or clustering.
+  Fits errors-in-variables (EIV) linear regression given
+  specified reliabilities, or a specified variance/covariance matrix for
+  the measurement errors. For either case, it computes robust standard
+  error estimates that allow for weighting and/or clustering.
 }
 
 \usage{
@@ -217,7 +217,7 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 %% \section{Warning }{....}
 
 \seealso{
-  \code{\link{summary.eivlm}}
+  \code{\link{summary.eivlm}}, \code{\link{deconv_npmle}}
 }
 
 \examples{

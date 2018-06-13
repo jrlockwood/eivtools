@@ -183,14 +183,14 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
   specifies a diagonal scale matrix that attempts to make the prior
   medians of the unknown residual variances approximately equal to the
   residual variances obtained by regressing components of \eqn{W}{W} on
-  \eqn{(Z,G)}{(Z,G)}.  Such variances will be somewhat inflated due to
-  measurement error in \eqn{W}{W} but the prior variance is sufficiently
-  large that this lack of alignment should be minimally consequential in
-  most applications.  The value of \code{scalemat} used in the
-  estimation is returned by the function, and users can start with the
-  default and then pass alternative values via the \code{scalemat}
-  argument for sensitivity analyses if desired.
-}
+  \eqn{(Z,G)}{(Z,G)}.  See \code{\link{get_bugs_wishart_scalemat}}.
+  Such variances will be somewhat inflated due to measurement error in
+  \eqn{W}{W} but the prior variance of the Wishart distribution is
+  sufficiently large that this lack of alignment should be minimally
+  consequential in most applications.  The value of \code{scalemat} used
+  in the estimation is returned by the function, and users can start
+  with the default and then pass alternative values via the
+  \code{scalemat} argument for sensitivity analyses if desired.  }
 
 \value{A object of class \code{rjags}, with additional information
   specific to this context.  The additional information is stored as a

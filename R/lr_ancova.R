@@ -1,15 +1,7 @@
-###################################
-## FLAG FUTURE WORK:
-##
-## variance function for Y - probably pass as its own varfuncs list, fix normalME syntax
-##
-## clustering within groups - need to deal with clusters for X model and Y model
-##
-####################################
 lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE,...){
 
     set.seed(seed)
-    tmpdir <- tempdir()
+    tmpdir  <- tempdir()
     modfile <- paste0(tmpdir,"/model.txt")
     if(is.null(plotfile)){
         plotfile <- paste0(tmpdir, "/lr_ancova_plots.pdf")
@@ -150,11 +142,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
 
     ## #############################################
     ## checks on Y and outcome model
-    ## #############################################
-    if(outcome_model == "normalME"){
-        stop("normalME not yet implemented")
-    }
-    
+    ## #############################################    
     if(!(outcome_model %in% c("normal","normalME","poisson","bernoulli_probit","bernoulli_logit"))){
         stop("Invalid value of 'outcome_model' - see documentation")
     }
@@ -317,14 +305,16 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     ## checks and processing on varfuncs
     ## #############################################
     if(!is.list(varfuncs)){
-        stop("varfuncs must be a list with as many elements as error-prone covariates")
+        stop("varfuncs must be a list")
+    }
+
+    nvf <- ifelse(outcome_model == "normalME", nX+1, nX)
+    
+    if(length(varfuncs) != nvf){
+        stop("varfuncs must be a list with as many elements as error-prone covariates, plus one if outcome_model is 'normalME'")
     }
     
-    if(length(varfuncs) != nX){
-        stop("varfuncs must be a list with as many elements as error-prone covariates")
-    }
-    
-    for(i in 1:nX){ ## loop over variance functions
+    for(i in 1:nvf){ ## loop over variance functions
         
         if(is.null(varfuncs[[i]]$type)){
             stop(paste0("varfuncs[[",i,"]] does not contain a 'type' element"))
@@ -589,12 +579,18 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
                 is.na(.tmp$W) <- TRUE
                 .tmp$W[is.na(W)] <- 0.0
             }
+
+            ## if outcome_model == "normalME", need to initial Yl as well
+            if(outcome_model == "normalME"){
+                zz <- Y
+                zz[which(is.na(zz))] <- 0.0
+                .tmp$Yl <- zz + rnorm(nR, sd=0.05)
+            }
             
             jags.inits[[i]] <- .tmp
             rm(.tmp)
         }
     }
-    
     
     ## #############################################
     ## create model file
@@ -708,14 +704,52 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     
     if(outcome_model == "normal"){
         cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file=modfile, append=TRUE)
-    } else if(outcome_model == "normalME"){
-        cat("Y[i] ~ dnorm(eta[i], precYgivenXZG)\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "poisson"){
         cat("Y[i] ~ dpois(exp(eta[i]))\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "bernoulli_probit"){
         cat("Y[i] ~ dbern(phi(eta[i]))\n}\n\n", file=modfile, append=TRUE)
     } else if(outcome_model == "bernoulli_logit"){
         cat("Y[i] ~ dbern(1.0 / (1.0 + exp(-1.0 * eta[i])))\n}\n\n", file=modfile, append=TRUE)
+    }
+    
+    ## if outcome_model == "normalME", need to add measurement model for Y.  Introduce
+    ## latent Y variable called "Yl" where Yl follows the outcome model used in "normal"
+    ## but then Y measures Yl with the error structure given in the last component of varfuncs
+    if(outcome_model == "normalME"){
+        cat("Yl[i] ~ dnorm(eta[i], precYgivenXZG)\n\n", file=modfile, append=TRUE)
+
+        vf <- varfuncs[[nX+1]]
+        
+        if(vf$type == "constant"){
+            cat(paste0("Y[i] ~ dnorm(Yl[i], ", (1.0 / vf$vtab),")\n}\n\n"), file=modfile, append=TRUE)
+        }
+        
+        if(vf$type == "piecewise_linear"){
+            .K <- nrow(vf$vtab)
+            cat(paste0("precYgivenYl[i] <- 1.0 / ( "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse(Yl[i] <= ",vf$vtabi$xL[2],",",vf$vtabi$a[2],",0.0)) + "), file=modfile, append=TRUE)
+            for(k in 2:.K){
+                cat(paste0("(ifelse( (Yl[i] > ",vf$vtabi$xL[k],") && (Yl[i] <= ",vf$vtabi$xU[k],"), ",vf$vtabi$a[k]," + (",vf$vtabi$b[k],")*(Yl[i] - (",vf$vtabi$xL[k],")),0.0)) + "), file=modfile, append=TRUE)
+            }
+            cat(paste0("(ifelse(Yl[i] > ",vf$vtabi$xU[.K],",",vf$vtabi$a[.K+1],",0.0)) )\n"), file=modfile, append=TRUE)
+            cat("Y[i] ~ dnorm(Yl[i], precYgivenYl[i])\n}\n\n", file=modfile, append=TRUE)
+        }
+        
+        if(vf$type == "log_polynomial"){
+            .K <- nrow(vf$vtab)
+            ## create string for polynomial
+            p1      <- paste0("(",as.vector(coef(vf$logmod)),")")
+            p2      <- c("","(Yl[i])",paste0("(Yl[i]^",2:(vf$degree),")"))
+            tmp     <- paste(p1, p2, sep="*")
+            tmp[1]  <- gsub("*","",tmp[1],fixed=TRUE)
+            pstring <- paste0("exp( ",paste(tmp, collapse=" + ")," )")
+            
+            cat(paste0("precYgivenYl[i] <- 1.0 / ( "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse(Yl[i] <= ",vf$vtab$x[1], ",",vf$vtab$gx[1], ",0.0)) + "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse(Yl[i] > " ,vf$vtab$x[.K],",",vf$vtab$gx[.K],",0.0)) + "), file=modfile, append=TRUE)
+            cat(paste0("(ifelse( (Yl[i] > ",vf$vtab$x[1],") && (Yl[i] <= ",vf$vtab$x[.K],"), ",pstring,", 0.0)) )\n"), file=modfile, append=TRUE)
+            cat("Y[i] ~ dnorm(Yl[i], precYgivenYl[i])\n}\n\n", file=modfile, append=TRUE)
+        }
     }
     
     ## priors: regression coefficients

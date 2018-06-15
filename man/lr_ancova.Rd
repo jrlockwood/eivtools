@@ -20,7 +20,7 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
 \arguments{
   
   \item{outcome_model}{A character string indicating the outcome model.
-    Valid values are currently 'normal', 'poisson',
+    Valid values are currently 'normal', 'normalME', 'poisson',
     'bernoulli_probit', and 'bernoulli_logit'.}
 
   \item{Y}{A numeric vector of outcome values. Missing values are allowed.}
@@ -93,14 +93,28 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
 
   The model assumes that the outcome \eqn{Y}{Y} depends on
   \eqn{(X,Z,G)}{(X,Z,G)} through a linear function of these predictors,
-  and parameters for this linear function are estimated.  The
-  conditional distribution of \eqn{Y}{Y} given these predictors may be
-  normal, Poisson, or Bernoulli.  If normal, the model also estimates a
-  residual variance for \eqn{Y}{Y} given the covariates.  If Poisson, a
-  log link is assumed.  If Bernoulli, either a logit or probit link can
-  be used, depending on the value of \code{outcome_model}.  The model
-  assumes that the conditional distribution of \eqn{X}{X} given
-  \eqn{(Z,G)}{(Z,G)} is normal with a mean vector that depends on
+  and parameters for this linear function are estimated. The conditional
+  distribution of \eqn{Y}{Y} given these predictors that is assumed by
+  the model depends on \code{outcome_model}.  If \code{outcome_model} is
+  \code{normal}, the conditional distribution of \eqn{Y}{Y} is assumed
+  to be normal, and the model also estimates a residual variance for
+  \eqn{Y}{Y} given the covariates. If \code{outcome_model} is
+  \code{normalME}, it is assumed that there is a latent variable (call
+  it \code{Yl}) that follows the same conditional distribution as when
+  \code{outcome_model} is \code{normal}, and then \eqn{Y}{Y} measures
+  \code{Yl} with normal measurement error and the known information
+  about this error is passed as the last component of \code{varfuncs}.
+  In this way, the \code{lr_ancova} can support models with
+  heteroskedastic measurement error in both the predictors and the
+  outcome.  If \code{outcome_model} is \code{poisson}, \eqn{Y}{Y} must
+  consists of non-negative integers and a log link is assumed.  If
+  \code{outcome_model} is \code{bernoulli_logit}, \eqn{Y}{Y} must take
+  on values of 0 and 1, and a logit link is assumed.  Finally, if
+  \code{outcome_model} is \code{bernoulli_probit}, \eqn{Y}{Y} must take
+  on values of 0 and 1, and a probit link is assumed.
+
+  The model assumes that the conditional distribution of \eqn{X}{X}
+  given \eqn{(Z,G)}{(Z,G)} is normal with a mean vector that depends on
   \eqn{(Z,G)}{(Z,G)} and a covariance matrix that is assumed not to
   depend on \eqn{(Z,G)}{(Z,G)}.  Both the regression parameters and the
   residual covariance matrix of this conditional distribution are
@@ -133,12 +147,17 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
 
   The \code{varfuncs} argument requires the most thinking.  This
   argument is a list with as many elements as there are error-prone
-  covariates.  Each element of the list is itself a list providing the
-  measurement error information about one of the error-prone covariates,
-  call it \code{i} corresponding to \code{W[,i]} to be concrete.  Then
-  \code{varfuncs[[i]]} must a list following a particular structure.
-  First, \code{varfuncs[[i]]$type} must be a character string taking one
-  of three possible values: \code{constant}, \code{piecewise_linear} or
+  covariates, or one plus the number of error-prone covariates if
+  \code{outcome_model} is \code{normalME}.  In this latter case, the
+  final element must be the error variance function for \eqn{Y}{Y}.
+
+  Each element of the list \code{varfuncs} is itself a list providing
+  the measurement error information about one of the error-prone
+  covariates (or the outcome, if \code{outcome_model} is
+  \code{normalME}).  For each \code{i}, \code{varfuncs[[i]]} must be a
+  list following a particular structure.  First,
+  \code{varfuncs[[i]]$type} must be a character string taking one of
+  three possible values: \code{constant}, \code{piecewise_linear} or
   \code{log_polynomial}.  The case \code{constant} corresponds to the
   case of homoskedastic measurement error where \eqn{g(X)}{g(X)} is
   constant, and the variance of this measurement error must be provided
@@ -216,13 +235,21 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
   parameters \code{betaYG} will generally be of most interest.  When
   \code{outcome_model} is \code{normal}, the residual standard deviation
   of \eqn{Y}{Y} given \eqn{(X,Z,G)}{(X,Z,G)} is also estimated and is
-  called \code{sdYgivenXZG}.  The regression parameters for the
-  conditional distribution of \eqn{X}{X} given \eqn{(Z,G)}{(Z,G)} are
-  partitioned as \code{betaXZ} and \code{betaXG}.  The residual
-  variance/covariance matrix for \eqn{X}{X} given \eqn{(Z,G)}{(Z,G)} is
-  named \code{varXgivenXG}. Additional details on these parameters can
-  be found by looking at the JAGS model file whose location is returned
-  as noted above.
+  called \code{sdYgivenXZG}.  Similarly, when \code{outcome_model} is
+  \code{normalME}, a residual standard deviation of the latent variable
+  corresponding to \eqn{Y}{Y} given \eqn{(X,Z,G)}{(X,Z,G)} is also
+  estimated and is also called \code{sdYgivenXZG}.  Note in this case
+  that the residual standard deviation of \eqn{Y}{Y} given its
+  corresponding latent variable is assumed to be known and specified via
+  \code{varfuncs}.
+  
+  The regression parameters for the conditional distribution of
+  \eqn{X}{X} given \eqn{(Z,G)}{(Z,G)} are partitioned as \code{betaXZ}
+  and \code{betaXG}.  The residual variance/covariance matrix for
+  \eqn{X}{X} given \eqn{(Z,G)}{(Z,G)} is named
+  \code{varXgivenXG}. Additional details on these parameters can be
+  found by looking at the JAGS model file whose location is returned as
+  noted above.
 }
 
 \seealso{

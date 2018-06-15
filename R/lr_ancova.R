@@ -325,29 +325,28 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
     }
     
     for(i in 1:nX){ ## loop over variance functions
-        tmp <- varfuncs[[i]]
         
-        if(is.null(tmp$type)){
+        if(is.null(varfuncs[[i]]$type)){
             stop(paste0("varfuncs[[",i,"]] does not contain a 'type' element"))
         }
         
-        if(!(tmp$type %in% c("constant","piecewise_linear","log_polynomial"))){
+        if(!(varfuncs[[i]]$type %in% c("constant","piecewise_linear","log_polynomial"))){
             stop(paste0("varfuncs[[",i,"]]$type must be one of 'constant', 'piecewise_linear' or 'log_polynomial'"))
         }
         
-        if(is.null(tmp$vtab)){
+        if(is.null(varfuncs[[i]]$vtab)){
             stop(paste0("varfuncs[[",i,"]] does not contain a 'vtab' element"))
         }
         
-        if(tmp$type == "constant"){ ## vtab should be a scalar variance
+        if(varfuncs[[i]]$type == "constant"){ ## vtab should be a scalar variance
             
-            if(!( !is.na(tmp$vtab) && is.numeric(tmp$vtab) && (length(tmp$vtab) == 1) && (tmp$vtab > 0) )){
+            if(!( !is.na(varfuncs[[i]]$vtab) && is.numeric(varfuncs[[i]]$vtab) && (length(varfuncs[[i]]$vtab) == 1) && (varfuncs[[i]]$vtab > 0) )){
                 stop(paste0("varfuncs[[",i,"]]$vtab inconsistent with varfuncs[[",i,"]]$type"))
             }
             
         } else { ## vtab should be a table of conditional variances
             
-            if( any(is.na(tmp$vtab)) ){
+            if( any(is.na(varfuncs[[i]]$vtab)) ){
                 stop(paste0("varfuncs[[",i,"]]$vtab contains missing values"))
             }
             
@@ -373,7 +372,7 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
                 stop(paste0("varfuncs[[",i,"]]$vtab has non-positive conditional variances"))
             }
             
-            if(tmp$type == "piecewise_linear"){
+            if(varfuncs[[i]]$type == "piecewise_linear"){
                 ## build the limits for the piecewise-linear variance function
                 .vtab           <- varfuncs[[i]]$vtab
                 .vtabi          <- vector(.K+1, mode="list")
@@ -402,15 +401,15 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
                 
             } else {
                 ## build the polynomial approximation function
-                if(is.null(tmp$degree)){ ## if no degree specified, default to 6
+                if(is.null(varfuncs[[i]]$degree)){ ## if no degree specified, default to 6
                     varfuncs[[i]]$degree <- 6
                 }
                 
-                if(!is.numeric(tmp$degree) || !(tmp$degree >= 2)){
+                if(!is.numeric(varfuncs[[i]]$degree) || !(varfuncs[[i]]$degree >= 2)){
                     stop(paste0("varfuncs[[",i,"]]$degree must be a positive integer >= 2"))
                 }
                 
-                if( (tmp$degree - 1) > nrow(varfuncs[[i]]$vtab) ){
+                if( (varfuncs[[i]]$degree - 1) > nrow(varfuncs[[i]]$vtab) ){
                     stop(paste0("varfuncs[[",i,"]]$degree too large for number of rows of varfuncs[[",i,"]]$vtab"))
                 }
                 

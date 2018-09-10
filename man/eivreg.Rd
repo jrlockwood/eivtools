@@ -209,7 +209,8 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 }
 
 \author{
-  J.R. Lockwood \email{jrlockwood@ets.org}
+  J.R. Lockwood \email{jrlockwood@ets.org} modified the \code{\link{lm}}
+  function to adapt it for EIV regression.
 }
 
 %% \note{
@@ -217,7 +218,7 @@ cluster_varname = NULL, df_adj = FALSE, stderr = TRUE, offset,
 %% \section{Warning }{....}
 
 \seealso{
-  \code{\link{summary.eivlm}}, \code{\link{deconv_npmle}}
+  \code{\link{lm}}, \code{\link{summary.eivlm}}, \code{\link{deconv_npmle}}
 }
 
 \examples{

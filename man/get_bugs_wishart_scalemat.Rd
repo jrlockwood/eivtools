@@ -88,6 +88,7 @@ get_bugs_wishart_scalemat(target, nsim=25000, reltol = 0.05, quietly=TRUE)
 }
 
 \examples{
+\donttest{
 tmp <- get_bugs_wishart_scalemat(target = c(10,4,4,8), nsim = 30000,
 reltol = 0.02, quietly=FALSE)
 print(tmp)
@@ -96,6 +97,7 @@ print(tmp)
 ## tmp$bugs.df) in a BUGS language, this will imply a prior distribution
 ## for the inverse of M that has medians of the diagonal elements
 ## approximately equal to 'target'
+}
 }
 
 \keyword{models}

@@ -286,6 +286,8 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
 }
 
 \examples{
+
+\donttest{
 set.seed(3001)
 cat("NOTE: this example uses MCMC and takes a little while to run\n")
 
@@ -378,6 +380,7 @@ e$est_m0 <- c(s, -sum(s))
 ## being positively correlated with average prior achievement.
 print(cor(tapply(testscores$math_lag1, testscores$schoolid, mean), e$est_m0 - e$mean))
 print(cor(tapply(testscores$lang_lag1, testscores$schoolid, mean), e$est_m0 - e$mean))
+}
 }
 
 \keyword{models}

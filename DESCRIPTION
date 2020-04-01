@@ -1,8 +1,8 @@
 Package: eivtools
 Type: Package
 Title: Measurement Error Modeling Tools
-Version: 0.1-8
-Date: 2018-09-16
+Version: 0.1-9
+Date: 2020-04-01
 Depends: R (>= 3.4.0), stats, grDevices, graphics, utils, R2jags
 Author: J.R. Lockwood
 Maintainer: J.R. Lockwood <jrlockwood@ets.org>

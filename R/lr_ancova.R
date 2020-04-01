@@ -320,8 +320,8 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
             stop(paste0("varfuncs[[",i,"]] does not contain a 'type' element"))
         }
         
-        if(!(varfuncs[[i]]$type %in% c("constant","piecewise_linear","log_polynomial"))){
-            stop(paste0("varfuncs[[",i,"]]$type must be one of 'constant', 'piecewise_linear' or 'log_polynomial'"))
+        if(!(varfuncs[[i]]$type %in% c("constant","hknown","piecewise_linear","log_polynomial"))){
+            stop(paste0("varfuncs[[",i,"]]$type must be one of 'constant', 'hknown', 'piecewise_linear' or 'log_polynomial'"))
         }
         
         if(is.null(varfuncs[[i]]$vtab)){
@@ -333,7 +333,11 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
             if(!( !is.na(varfuncs[[i]]$vtab) && is.numeric(varfuncs[[i]]$vtab) && (length(varfuncs[[i]]$vtab) == 1) && (varfuncs[[i]]$vtab > 0) )){
                 stop(paste0("varfuncs[[",i,"]]$vtab inconsistent with varfuncs[[",i,"]]$type"))
             }
-            
+        } else if(varfuncs[[i]]$type == "hknown"){ ## vtab should contain known case-specific error variances
+
+            if(!( is.numeric(varfuncs[[i]]$vtab) && (length(varfuncs[[i]]$vtab) == nR) && all(varfuncs[[i]]$vtab > 0) )){
+                stop(paste0("varfuncs[[",i,"]]$vtab inconsistent with varfuncs[[",i,"]]$type"))
+            }            
         } else { ## vtab should be a table of conditional variances
             
             if( any(is.na(varfuncs[[i]]$vtab)) ){
@@ -510,6 +514,24 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
         jags.data      <- c(jags.data,"betaYXZ_zeros","betaYXZ_prec")
     }
 
+    ## add data elements containing known measurement precisions if there are any 'hknown' elements
+    ## of varfuncs.  if nX > 1, set to 0.0 elements of hknown_prec that correspond to error-prone
+    ## variables with a different error structure
+    if(any(sapply(varfuncs, function(x){ x$type == "hknown" }))){
+
+        if(nX==1){
+            hknown_precs <- 1.0 / varfuncs[[1]]$vtab
+        } else {
+            hknown_precs <- matrix(0.0, nrow=nR, ncol=nX)
+            for(j in 1:nX){
+                if( varfuncs[[j]]$type=="hknown" ){
+                    hknown_precs[,j] <- 1.0 / varfuncs[[j]]$vtab
+                }
+            }
+        }
+        jags.data    <- c(jags.data,"hknown_precs")
+    }
+    
     ## #############################################
     ## generate initial values (unless they have already been passed)
     ##
@@ -627,6 +649,10 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
         if(vf$type == "constant"){
             cat(paste0("W[i] ~ dnorm(X[i], ", (1.0 / vf$vtab),")\n\n\n"), file=modfile, append=TRUE)
         }
+
+        if(vf$type == "hknown"){
+            cat(paste0("W[i] ~ dnorm(X[i], hknown_precs[i])","\n\n\n"), file=modfile, append=TRUE)
+        }
         
         if(vf$type == "piecewise_linear"){
             .K <- nrow(vf$vtab)
@@ -660,6 +686,10 @@ lr_ancova <- function(outcome_model, Y, W, Z, G, varfuncs, plotfile=NULL, seed=1
             
             if(vf$type == "constant"){
                 cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], ", (1.0 / vf$vtab),")\n\n\n"), file=modfile, append=TRUE)
+            }
+
+            if(vf$type == "hknown"){
+                cat(paste0("W[i,",j,"] ~ dnorm(X[i,",j,"], hknown_precs[i,",j,"])","\n\n\n"), file=modfile, append=TRUE)
             }
             
             if(vf$type == "piecewise_linear"){

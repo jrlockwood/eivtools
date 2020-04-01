@@ -157,22 +157,26 @@ seed=12345, modelfileonly=FALSE, scalemat=NULL, blockprior=TRUE, ...)
   \code{normalME}).  For each \code{i}, \code{varfuncs[[i]]} must be a
   list following a particular structure.  First,
   \code{varfuncs[[i]]$type} must be a character string taking one of
-  three possible values: \code{constant}, \code{piecewise_linear} or
-  \code{log_polynomial}.  The case \code{constant} corresponds to the
-  case of homoskedastic measurement error where \eqn{g(X)}{g(X)} is
-  constant, and the variance of this measurement error must be provided
-  in \code{varfuncs[[i]]$vtab}.  The other two cases correspond to the
-  case where the conditional measurement error variance \eqn{g(X)}{g(X)}
-  is a nontrivial function of \eqn{X}{X}.  In both of these cases,
-  \code{varfuncs[[i]]$vtab} must be a matrix or data frame with exactly
-  two columns and \code{K} rows, where the first column provides values
-  \code{x[1],...,x[K]} of \eqn{X}{X} and the second column provides
-  values \code{g(x[1]),...,g(x[K])}.  That is, the function \eqn{g(X)}
-  is conveyed via a lookup table.  The value of \code{K} is selected by
-  the user. Larger values of \code{K} will make the approximation to
-  \eqn{g(X)} more accurate but will cause the model estimation to
-  proceed more slowly.  How the values in the lookup table are used to
-  approximate \eqn{g(X)} more generally depends whether
+  four possible values: \code{constant}, \code{hknown},
+  \code{piecewise_linear} or \code{log_polynomial}.  The case
+  \code{constant} corresponds to the case of homoskedastic measurement
+  error where \eqn{g(X)}{g(X)} is constant, and the variance of this
+  measurement error must be provided in \code{varfuncs[[i]]$vtab}.  The
+  case \code{hknown} corresponds to the case of heteroskedastic
+  measurement error with a known value for each case, and these values
+  must be provided as a vector in \code{varfuncs[[i]]$vtab}.  Missing
+  values in this vector are not allowed.  The other two cases correspond
+  to the case where the conditional measurement error variance
+  \eqn{g(X)}{g(X)} is a nontrivial function of \eqn{X}{X}.  In both of
+  these cases, \code{varfuncs[[i]]$vtab} must be a matrix or data frame
+  with exactly two columns and \code{K} rows, where the first column
+  provides values \code{x[1],...,x[K]} of \eqn{X}{X} and the second
+  column provides values \code{g(x[1]),...,g(x[K])}.  That is, the
+  function \eqn{g(X)} is conveyed via a lookup table.  The value of
+  \code{K} is selected by the user. Larger values of \code{K} will make
+  the approximation to \eqn{g(X)} more accurate but will cause the model
+  estimation to proceed more slowly.  How the values in the lookup table
+  are used to approximate \eqn{g(X)} more generally depends whether
   \code{varfuncs[[i]]$type} is \code{piecewise_linear} or
   \code{log_polynomial}.  In the case of \code{piecewise_linear}, the
   values in the lookup table are linearly interpolated.  In the case of
